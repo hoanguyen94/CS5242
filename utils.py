@@ -45,14 +45,33 @@ def load_mini_imagenet(subset: Optional[int] = None) -> Dict:
     Loads timm/mini-imagenet splits as Hugging Face datasets.
     Optionally subsets each split to `subset` examples for speed.
     """
-    ds = load_dataset("timm/mini-imagenet")
+    ds = load_dataset("timm/mini-imagenet", download_mode="reuse_cache_if_exists")
     if subset is not None:
         ds = {k: v.select(range(min(subset, len(v)))) for k, v in ds.items()}
+    ds["class_names"] = class_names_from_ds(ds["train"])
     return ds
 
 
+def load_class_mapping(path: Path) -> Dict[str, str]:
+    """Loads class ID to name mapping from map_clsloc.txt."""
+    mapping = {}
+    with open(path, 'r') as f:
+        for line in f:
+            parts = line.strip().split(' ', 1)
+            if len(parts) == 2:
+                mapping[parts[0]] = parts[1]
+    return mapping
+
+
 def class_names_from_ds(ds_split):
-    return ds_split.features["label"].names
+    # Load mapping if available
+    map_path = Path(__file__).parent / "map_clsloc.txt"
+    if map_path.exists():
+        mapping = load_class_mapping(map_path)
+        ids = ds_split.features["label"].names
+        return [mapping.get(id, id) for id in ids]
+    else:
+        return ds_split.features["label"].names
 
 
 def compute_mean_std(ds_split, num_workers: int = 0) -> Tuple[np.ndarray, np.ndarray]:
@@ -98,7 +117,7 @@ def gather_image_meta(ds_split, sample_limit: Optional[int] = None) -> Dict:
             break
     return {
         "total": n,
-        "resolutions": dict(res_counter),
+        "resolutions": {f"{w}x{h}": count for (w, h), count in res_counter.items()},
         "formats": dict(fmt_counter),
         "modes": dict(mode_counter),
     }
@@ -181,7 +200,7 @@ def make_transforms(
         ])
 
     eval_tf = transforms.Compose([
-        transforms.Resize(int(img_size * 256 / 224)),
+        transforms.Resize(int(img_size)),
         transforms.CenterCrop(img_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=mean, std=std),
@@ -189,8 +208,6 @@ def make_transforms(
 
     # For "before vs after" visualisation — no normalization
     tensor_only = transforms.Compose([
-        transforms.Resize(int(img_size * 256 / 224)),
-        transforms.CenterCrop(img_size),
         transforms.ToTensor(),
     ])
     return train_tf, eval_tf, tensor_only
@@ -319,6 +336,10 @@ def explore(ds, save_dir: Path) -> None:
     meta_train = gather_image_meta(train)
     meta_val = gather_image_meta(ds["validation"])
     meta_test = gather_image_meta(ds["test"])
+    print("meta_train: ", meta_train)
+    print("meta_val: ", meta_val)
+    print("meta_test: ", meta_test)
+
     with open(save_dir / "image_meta.json", "w") as f:
         json.dump({"train": meta_train, "validation": meta_val, "test": meta_test}, f, indent=2)
     print("Saved image metadata (resolutions/formats/modes).")

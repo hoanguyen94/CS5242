@@ -55,7 +55,7 @@ def extract_convnext_features(
     feats_list, labels_list = [], []
     for x, y in loader:
         x = x.to(device, non_blocking=True)
-        feat_map = model.forward_features(x)   # (B, C, H, W)
+        feat_map = model.features(x)   # (B, C, H, W)
         feats = feat_map.mean(dim=(2, 3))       # GAP → (B, C)
         feats_list.append(feats.cpu().numpy())
         labels_list.append(y.numpy())
