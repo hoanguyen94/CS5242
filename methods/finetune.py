@@ -3,8 +3,8 @@ methods/finetune.py
 ===================
 Approach 2 — Pretrained Fine-tuning with Selective Freezing
 ------------------------------------------------------------
-Fine-tune a pretrained ConvNeXt-Tiny on Mini-ImageNet using one of three
-freeze policies:
+Fine-tune a pretrained backbone (ConvNeXt / ResNet / EfficientNet) on
+Mini-ImageNet using one of three freeze policies:
   • backbone   — freeze all feature stages; train classifier head only
   • last_stage — freeze early stages; train the last stage + head
   • none        — fine-tune all parameters end-to-end
@@ -27,7 +27,7 @@ from utils import (
     set_seed, get_device,
 )
 from model import (
-    build_convnext_tiny, set_freeze_policy,
+    build_backbone, set_freeze_policy,
     count_params, try_flops, evaluate,
 )
 
@@ -37,6 +37,7 @@ def train_finetune(
     train_tf,
     eval_tf,
     device: torch.device,
+    backbone: str = "convnext_tiny",
     epochs: int = 5,
     batch_size: int = 128,
     lr: float = 1e-4,
@@ -67,7 +68,12 @@ def train_finetune(
         ds, train_tf, eval_tf, batch_size=batch_size
     )
 
-    model = build_convnext_tiny(num_classes=100, pretrained=use_pretrained, device=device)
+    model = build_backbone(
+        backbone=backbone,
+        num_classes=100,
+        pretrained=use_pretrained,
+        device=device,
+    )
     set_freeze_policy(model, freeze_policy)
 
     optimizer = torch.optim.AdamW(
@@ -75,8 +81,8 @@ def train_finetune(
     )
     ce = nn.CrossEntropyLoss()
 
-    tag = f"{freeze_policy}_{'pre' if use_pretrained else 'scratch'}"
-    ckpt_path = save_dir / f"convnext_{tag}.pt"
+    tag = f"{backbone}_{freeze_policy}_{'pre' if use_pretrained else 'scratch'}"
+    ckpt_path = save_dir / f"{tag}.pt"
 
     results = {
         "approach":        "finetune",
@@ -182,6 +188,8 @@ def _parse_args():
     p.add_argument("--batch_size",    type=int,   default=128)
     p.add_argument("--lr",            type=float, default=1e-4)
     p.add_argument("--img_size",      type=int,   default=224)
+    p.add_argument("--backbone",      default="convnext_tiny",
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
     p.add_argument("--use_aug",       action="store_true")
     p.add_argument("--seed",          type=int,   default=24)
     p.add_argument("--use_gpu",       action="store_true")
@@ -205,6 +213,7 @@ if __name__ == "__main__":
         train_tf=train_tf,
         eval_tf=eval_tf,
         device=device,
+        backbone=args.backbone,
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,

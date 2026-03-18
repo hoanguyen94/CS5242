@@ -3,9 +3,9 @@ methods/train_scratch.py
 ========================
 Approach 3 — Training from Scratch (Baseline)
 ----------------------------------------------
-Train a ConvNeXt-Tiny from randomly initialised weights (no pretrained
-weights) end-to-end on Mini-ImageNet.  This serves as the baseline to
-measure how much benefit pretrained weights provide.
+Train a backbone (ConvNeXt / ResNet / EfficientNet) from randomly
+initialised weights (no pretrained weights) end-to-end on Mini-ImageNet.
+This serves as the baseline to measure how much benefit pretrained weights provide.
 
 Internally re-uses `train_finetune` from methods/finetune.py with
 `use_pretrained=False` and `freeze_policy='none'`.
@@ -29,6 +29,7 @@ def train_from_scratch(
     train_tf,
     eval_tf,
     device,
+    backbone: str = "convnext_tiny",
     epochs: int = 5,
     batch_size: int = 128,
     lr: float = 1e-4,
@@ -58,6 +59,7 @@ def train_from_scratch(
         train_tf=train_tf,
         eval_tf=eval_tf,
         device=device,
+        backbone=backbone,
         epochs=epochs,
         batch_size=batch_size,
         lr=lr,
@@ -78,6 +80,8 @@ def _parse_args():
     p.add_argument("--batch_size", type=int,   default=128)
     p.add_argument("--lr",         type=float, default=1e-4)
     p.add_argument("--img_size",   type=int,   default=224)
+    p.add_argument("--backbone",   default="convnext_tiny",
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
     p.add_argument("--use_aug",    action="store_true")
     p.add_argument("--seed",       type=int,   default=24)
     p.add_argument("--use_gpu",    action="store_true")
@@ -101,6 +105,7 @@ if __name__ == "__main__":
         train_tf=train_tf,
         eval_tf=eval_tf,
         device=device,
+        backbone=args.backbone,
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,

@@ -24,13 +24,14 @@ from utils import (
     ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
     set_seed, get_device,
 )
-from model import build_convnext_tiny, extract_convnext_features
+from model import build_backbone, extract_convnext_features
 
 
 def classical_ml_experiment(
     ds,
     eval_tf,
     device,
+    backbone: str = "convnext_tiny",
     clf_type: str = "logreg",
     batch_size: int = 256,
     save_dir: Path = Path("./outputs"),
@@ -53,7 +54,12 @@ def classical_ml_experiment(
     ensure_dir(save_dir)
 
     # Feature extractor — pretrained backbone, classifier head not used
-    model = build_convnext_tiny(num_classes=100, pretrained=True, device=device)
+    model = build_backbone(
+        backbone=backbone,
+        num_classes=100,
+        pretrained=True,
+        device=device,
+    )
     train_loader, val_loader, test_loader = make_loaders(
         ds, eval_tf, eval_tf, batch_size=batch_size
     )
@@ -115,6 +121,8 @@ def _parse_args():
     p.add_argument("--clf_type",    default="logreg", choices=["logreg", "linear_svm"])
     p.add_argument("--batch_size",  type=int, default=256)
     p.add_argument("--img_size",    type=int, default=224)
+    p.add_argument("--backbone",    default="convnext_tiny",
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
     p.add_argument("--seed",        type=int, default=24)
     p.add_argument("--use_gpu",     action="store_true")
     p.add_argument("--subset",      type=int, default=None,
@@ -137,6 +145,7 @@ if __name__ == "__main__":
         ds=ds,
         eval_tf=eval_tf,
         device=device,
+        backbone=args.backbone,
         clf_type=args.clf_type,
         batch_size=args.batch_size,
         save_dir=save_dir,
