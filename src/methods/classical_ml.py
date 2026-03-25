@@ -11,7 +11,6 @@ Usage (standalone):
     python -m methods.classical_ml --save_dir experiments/classical_ml
 """
 
-import argparse
 import json
 import time
 from pathlib import Path
@@ -20,11 +19,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score
 
-from utils import (
-    ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
-    set_seed, get_device,
-)
-from model import build_backbone, extract_convnext_features
+from ..utils import ensure_dir, make_loaders
+from ..model import build_backbone, extract_convnext_features
 
 
 def classical_ml_experiment(
@@ -106,47 +102,14 @@ def classical_ml_experiment(
     out_path = save_dir / f"classical_ml_{clf_type}.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
-    print(f"Classical ML results: {results}")
+    print(f"\n{'='*40}")
+    print(f"  Classical ML Results ({clf.__class__.__name__})")
+    print(f"{'='*40}")
+    print(f"  Val  accuracy : {val_acc:.4f}")
+    print(f"  Test accuracy : {test_acc:.4f}")
+    print(f"  Feature extraction time : {feat_time:.1f}s")
+    print(f"  Classifier train time   : {train_time:.1f}s")
+    print(f"  Train/Val/Test samples   : {len(y_train)}/{len(y_val)}/{len(y_test)}")
+    print(f"{'='*40}")
     print(f"Saved results → {out_path}")
     return results
-
-
-# ──────────────────────────────────────────────
-# CLI Entry-point
-# ──────────────────────────────────────────────
-
-def _parse_args():
-    p = argparse.ArgumentParser(description="Approach 1: Classical ML on frozen features")
-    p.add_argument("--save_dir",    default="experiments/classical_ml")
-    p.add_argument("--clf_type",    default="logreg", choices=["logreg", "linear_svm"])
-    p.add_argument("--batch_size",  type=int, default=256)
-    p.add_argument("--img_size",    type=int, default=224)
-    p.add_argument("--backbone",    default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
-    p.add_argument("--seed",        type=int, default=24)
-    p.add_argument("--use_gpu",     action="store_true")
-    p.add_argument("--subset",      type=int, default=None,
-                   help="Limit dataset size per split (for quick testing)")
-    return p.parse_args()
-
-
-if __name__ == "__main__":
-    args = _parse_args()
-    set_seed(args.seed)
-    device   = get_device(args.use_gpu)
-    save_dir = Path(args.save_dir)
-
-    print("Loading dataset …")
-    ds = load_mini_imagenet(subset=args.subset)
-
-    _, eval_tf, _ = make_transforms(img_size=args.img_size)
-
-    classical_ml_experiment(
-        ds=ds,
-        eval_tf=eval_tf,
-        device=device,
-        backbone=args.backbone,
-        clf_type=args.clf_type,
-        batch_size=args.batch_size,
-        save_dir=save_dir,
-    )

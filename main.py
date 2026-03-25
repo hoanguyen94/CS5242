@@ -40,14 +40,13 @@ import torch
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 
-from utils import (
+from src.utils import (
     set_seed, get_device, ensure_dir,
-    load_mini_imagenet, make_transforms,
-    explore, visualize_transforms,
     HFDatasetWrapper,
 )
-from model import build_backbone, extract_convnext_features
-from methods import classical_ml_experiment, train_finetune, train_from_scratch
+from src.data_processing.data_processing import load_mini_imagenet, explore_dataset, make_transforms, visualize_transforms
+from src.model import build_backbone, extract_convnext_features
+from src.methods import classical_ml_experiment, train_finetune, train_from_scratch
 
 # ──────────────────────────────────────────────
 # Argument Parsing
@@ -60,6 +59,7 @@ def parse_args():
     p.add_argument("--task", required=True,
                    choices=["explore", "visualize_transforms",
                              "features_ml", "finetune", "scratch", "tsne"])
+    p.add_argument("--data_dir",    default="data")
     p.add_argument("--save_dir",    default="experiments/temp")
     p.add_argument("--seed",        type=int,   default=24)
     p.add_argument("--use_gpu",     action="store_true")
@@ -154,7 +154,7 @@ def main():
 
     # ── Load dataset ──────────────────────────────────────────────────────────
     print("Loading dataset: timm/mini-imagenet …")
-    ds = load_mini_imagenet(subset=args.subset)
+    ds = load_mini_imagenet(subset=args.subset, cache_path=args.data_dir)
     print({k: len(v) for k, v in ds.items()})
 
     # ── Load or compute mean/std for normalisation ────────────────────────────
@@ -177,7 +177,7 @@ def main():
     # ── Dispatch ──────────────────────────────────────────────────────────────
 
     if args.task == "explore":
-        explore(ds, save_dir=save_dir)
+        explore_dataset(ds, save_dir=save_dir)
 
     elif args.task == "visualize_transforms":
         vis_dir = save_dir / "transform_viz"

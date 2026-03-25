@@ -14,14 +14,9 @@ Usage (standalone):
     python -m methods.train_scratch --save_dir experiments/scratch
 """
 
-import argparse
 from pathlib import Path
 
-from utils import (
-    ensure_dir, load_mini_imagenet, make_transforms,
-    set_seed, get_device,
-)
-from methods.finetune import train_finetune
+from .finetune import train_finetune
 
 
 def train_from_scratch(
@@ -65,49 +60,5 @@ def train_from_scratch(
         lr=lr,
         freeze_policy="none",
         use_pretrained=False,
-        save_dir=save_dir,
-    )
-
-
-# ──────────────────────────────────────────────
-# CLI Entry-point
-# ──────────────────────────────────────────────
-
-def _parse_args():
-    p = argparse.ArgumentParser(description="Approach 3: Train ConvNeXt-Tiny from scratch")
-    p.add_argument("--save_dir",   default="experiments/scratch")
-    p.add_argument("--epochs",     type=int,   default=5)
-    p.add_argument("--batch_size", type=int,   default=128)
-    p.add_argument("--lr",         type=float, default=1e-4)
-    p.add_argument("--img_size",   type=int,   default=224)
-    p.add_argument("--backbone",   default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
-    p.add_argument("--use_aug",    action="store_true")
-    p.add_argument("--seed",       type=int,   default=24)
-    p.add_argument("--use_gpu",    action="store_true")
-    p.add_argument("--subset",     type=int,   default=None)
-    return p.parse_args()
-
-
-if __name__ == "__main__":
-    args = _parse_args()
-    set_seed(args.seed)
-    device   = get_device(args.use_gpu)
-    save_dir = Path(args.save_dir)
-
-    print("Loading dataset …")
-    ds = load_mini_imagenet(subset=args.subset)
-
-    train_tf, eval_tf, _ = make_transforms(img_size=args.img_size, use_aug=args.use_aug)
-
-    train_from_scratch(
-        ds=ds,
-        train_tf=train_tf,
-        eval_tf=eval_tf,
-        device=device,
-        backbone=args.backbone,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr,
         save_dir=save_dir,
     )

@@ -13,20 +13,15 @@ Usage (standalone):
     python -m methods.finetune --save_dir experiments/finetune --freeze_policy backbone
 """
 
-import argparse
 import json
 import time
 from pathlib import Path
-from typing import List
 
 import torch
 import torch.nn as nn
 
-from utils import (
-    ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
-    set_seed, get_device,
-)
-from model import (
+from ..utils import ensure_dir, make_loaders
+from ..model import (
     build_backbone, set_freeze_policy,
     count_params, try_flops, evaluate,
 )
@@ -173,51 +168,3 @@ def train_finetune(
         json.dump(results, f, indent=2)
     print(f"Saved training results & checkpoint to: {save_dir}")
     return results, ckpt_path
-
-
-# ──────────────────────────────────────────────
-# CLI Entry-point
-# ──────────────────────────────────────────────
-
-def _parse_args():
-    p = argparse.ArgumentParser(description="Approach 2: Pretrained fine-tuning")
-    p.add_argument("--save_dir",      default="experiments/finetune")
-    p.add_argument("--freeze_policy", default="backbone",
-                   choices=["backbone", "last_stage", "none"])
-    p.add_argument("--epochs",        type=int,   default=5)
-    p.add_argument("--batch_size",    type=int,   default=128)
-    p.add_argument("--lr",            type=float, default=1e-4)
-    p.add_argument("--img_size",      type=int,   default=224)
-    p.add_argument("--backbone",      default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
-    p.add_argument("--use_aug",       action="store_true")
-    p.add_argument("--seed",          type=int,   default=24)
-    p.add_argument("--use_gpu",       action="store_true")
-    p.add_argument("--subset",        type=int,   default=None)
-    return p.parse_args()
-
-
-if __name__ == "__main__":
-    args = _parse_args()
-    set_seed(args.seed)
-    device   = get_device(args.use_gpu)
-    save_dir = Path(args.save_dir)
-
-    print("Loading dataset …")
-    ds = load_mini_imagenet(subset=args.subset)
-
-    train_tf, eval_tf, _ = make_transforms(img_size=args.img_size, use_aug=args.use_aug)
-
-    train_finetune(
-        ds=ds,
-        train_tf=train_tf,
-        eval_tf=eval_tf,
-        device=device,
-        backbone=args.backbone,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        freeze_policy=args.freeze_policy,
-        use_pretrained=True,
-        save_dir=save_dir,
-    )
