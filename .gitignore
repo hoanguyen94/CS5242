@@ -6,3 +6,4 @@
 **.pptx
 **/dev
 .venv/
+data/
