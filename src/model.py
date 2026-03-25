@@ -15,6 +15,9 @@ import torch.nn as nn
 import torchvision
 from torchvision.models import convnext_tiny, ConvNeXt_Tiny_Weights
 
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+
 # Optional FLOPs (handled gracefully if not installed)
 try:
     from thop import profile
@@ -29,17 +32,8 @@ except Exception:
 
 def _replace_classifier_head(model: nn.Module, num_classes: int) -> nn.Module:
     """Replace the final classifier head to match `num_classes`."""
-    # ConvNeXt style
+    # ConvNeXt / EfficientNet style (classifier as nn.Sequential)
     if hasattr(model, "classifier") and isinstance(model.classifier, nn.Sequential):
-        last = model.classifier[-1]
-        if isinstance(last, nn.Linear):
-            in_features = last.in_features
-            model.classifier[-1] = nn.Linear(in_features, num_classes)
-            return model
-
-    # EfficientNet (torchvision) style
-    if hasattr(model, "classifier") and isinstance(model.classifier, nn.Sequential):
-        # many EfficientNet variants store classifier as nn.Sequential([Dropout, Linear])
         last = model.classifier[-1]
         if isinstance(last, nn.Linear):
             in_features = last.in_features
@@ -312,3 +306,133 @@ def evaluate(
             correct += (preds == y).sum().item()
             total += y.size(0)
     return correct / max(total, 1), loss_sum / max(total, 1)
+
+
+# ──────────────────────────────────────────────
+# Visualization
+# ──────────────────────────────────────────────
+
+def print_freeze_summary(model: nn.Module) -> None:
+    """Print a per-module summary of frozen vs trainable parameters."""
+    print(f"{'Module':<40s} {'Params':>10s} {'Trainable':>10s} {'Status':>10s}")
+    print("─" * 74)
+    total, total_train = 0, 0
+    for name, module in model.named_children():
+        params = sum(p.numel() for p in module.parameters())
+        trainable = sum(p.numel() for p in module.parameters() if p.requires_grad)
+        total += params
+        total_train += trainable
+        status = "frozen" if trainable == 0 else ("trainable" if trainable == params else "partial")
+        print(f"{name:<40s} {params:>10,d} {trainable:>10,d} {status:>10s}")
+    print("─" * 74)
+    print(f"{'TOTAL':<40s} {total:>10,d} {total_train:>10,d}")
+    print(f"Trainable: {total_train/max(total,1)*100:.1f}%\n")
+
+
+def plot_training_curves(results: dict, save_dir=None) -> None:
+    """Plot loss, accuracy, and LR curves from training results."""
+    import matplotlib.pyplot as plt
+
+    logs = results["epoch_logs"]
+    if not logs:
+        print("No epoch logs to plot.")
+        return
+
+    epochs = [l["epoch"] for l in logs]
+    train_loss = [l["train_loss"] for l in logs]
+    val_loss = [l["val_loss"] for l in logs]
+    train_acc = [l["train_acc"] for l in logs]
+    val_acc = [l["val_acc"] for l in logs]
+    has_lr = "lr" in logs[0]
+
+    n_plots = 3 if has_lr else 2
+    fig, axes = plt.subplots(1, n_plots, figsize=(6 * n_plots, 4))
+
+    # Loss
+    axes[0].plot(epochs, train_loss, "o-", label="Train")
+    axes[0].plot(epochs, val_loss, "o-", label="Val")
+    axes[0].set_xlabel("Epoch")
+    axes[0].set_ylabel("Loss")
+    axes[0].set_title("Loss")
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
+
+    # Accuracy
+    axes[1].plot(epochs, train_acc, "o-", label="Train")
+    axes[1].plot(epochs, val_acc, "o-", label="Val")
+    axes[1].set_xlabel("Epoch")
+    axes[1].set_ylabel("Accuracy")
+    axes[1].set_title("Accuracy")
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+
+    # LR schedule
+    if has_lr:
+        lrs = [l["lr"] for l in logs]
+        axes[2].plot(epochs, lrs, "o-", color="green")
+        axes[2].set_xlabel("Epoch")
+        axes[2].set_ylabel("Learning Rate")
+        axes[2].set_title("LR Schedule")
+        axes[2].grid(True, alpha=0.3)
+
+    plt.suptitle(f"{results.get('approach', '')} | freeze={results.get('freeze_policy', 'n/a')}")
+    plt.tight_layout()
+    if save_dir:
+        from pathlib import Path
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
+        plt.savefig(Path(save_dir) / "training_curves.png", dpi=200)
+    plt.show()
+
+
+@torch.no_grad()
+def extract_features_for_vis(model: nn.Module, loader, device, max_samples: int = 2000):
+    """Extract penultimate-layer features and labels for a subset of samples."""
+    model.eval()
+    feats_list, labels_list = [], []
+    n = 0
+    for x, y in loader:
+        x = x.to(device, non_blocking=True)
+        feat_map = _extract_backbone_features(model, x)
+        feats = feat_map.mean(dim=(2, 3))  # GAP → (B, C)
+        feats_list.append(feats.cpu().numpy())
+        labels_list.append(y.numpy())
+        n += y.size(0)
+        if n >= max_samples:
+            break
+    feats = np.concatenate(feats_list, axis=0)[:max_samples]
+    labels = np.concatenate(labels_list, axis=0)[:max_samples]
+    return feats, labels
+
+
+def plot_representation_snapshots(snapshots: list, save_dir=None) -> None:
+    """
+    Plot t-SNE of feature representations at different epochs.
+
+    Args:
+        snapshots: list of dicts with keys 'epoch', 'features' (N,C), 'labels' (N,)
+        save_dir:  optional directory to save the figure
+    """
+
+    n = len(snapshots)
+    fig, axes = plt.subplots(1, n, figsize=(6 * n, 5))
+    if n == 1:
+        axes = [axes]
+
+    for ax, snap in zip(axes, snapshots):
+        tsne = TSNE(n_components=2, perplexity=30, random_state=42, n_iter=500)
+        proj = tsne.fit_transform(snap["features"])
+        scatter = ax.scatter(
+            proj[:, 0], proj[:, 1],
+            c=snap["labels"], cmap="tab20", s=3, alpha=0.6,
+        )
+        ax.set_title(f"Epoch {snap['epoch']}")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    plt.suptitle("Feature Representations (t-SNE)", fontsize=14)
+    plt.tight_layout()
+    if save_dir:
+        from pathlib import Path
+        Path(save_dir).mkdir(parents=True, exist_ok=True)
+        plt.savefig(Path(save_dir) / "representation_tsne.png", dpi=200)
+    plt.show()
