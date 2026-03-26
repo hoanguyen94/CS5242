@@ -419,7 +419,7 @@ def plot_representation_snapshots(snapshots: list, save_dir=None) -> None:
         axes = [axes]
 
     for ax, snap in zip(axes, snapshots):
-        tsne = TSNE(n_components=2, perplexity=30, random_state=42, n_iter=500)
+        tsne = TSNE(n_components=2, perplexity=30, random_state=42, max_iter=500)
         proj = tsne.fit_transform(snap["features"])
         scatter = ax.scatter(
             proj[:, 0], proj[:, 1],

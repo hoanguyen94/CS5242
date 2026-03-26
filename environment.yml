@@ -1,24 +1,14 @@
 name: cs5242
 channels:
   - pytorch
-  - nvidia
   - conda-forge
-  - defaults
 dependencies:
   - python=3.12
   - pytorch
   - torchvision
-  - torchaudio
-  - pytorch-cuda=12.4
   - numpy
   - scipy
   - scikit-learn
   - matplotlib
   - pillow
   - tqdm
-  - jupyter
-  - ipykernel
-  - pip
-  - pip:
-      - datasets
-      - thop
