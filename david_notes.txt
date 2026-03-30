@@ -1,0 +1,17 @@
+# Approach 1 — Classical ML on Frozen Features
+
+## Logistic Regression
+python main.py --task features_ml --clf_type logreg --backbone convnext_tiny   --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type logreg --backbone resnet18        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type logreg --backbone resnet34        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type logreg --backbone resnet50        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type logreg --backbone efficientnet_b0 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type logreg --backbone efficientnet_b1 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+
+## Linear SVM
+python main.py --task features_ml --clf_type linear_svm --backbone convnext_tiny   --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type linear_svm --backbone resnet18        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type linear_svm --backbone resnet34        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type linear_svm --backbone resnet50        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type linear_svm --backbone efficientnet_b0 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python main.py --task features_ml --clf_type linear_svm --backbone efficientnet_b1 --img_size 224 --save_dir experiments/classical_ml --use_gpu
