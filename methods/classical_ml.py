@@ -103,7 +103,7 @@ def classical_ml_experiment(
         "n_val":             int(len(y_val)),
         "n_test":            int(len(y_test)),
     }
-    out_path = save_dir / f"classical_ml_{clf_type}.json"
+    out_path = save_dir / f"classical_ml_{clf_type}_{backbone}.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"Classical ML results: {results}")

@@ -1,17 +1,119 @@
 # Approach 1 — Classical ML on Frozen Features
 
 ## Logistic Regression
-python main.py --task features_ml --clf_type logreg --backbone convnext_tiny   --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type logreg --backbone resnet18        --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type logreg --backbone resnet34        --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type logreg --backbone resnet50        --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type logreg --backbone efficientnet_b0 --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type logreg --backbone efficientnet_b1 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type logreg --backbone convnext_tiny   --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type logreg --backbone resnet18        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type logreg --backbone resnet34        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type logreg --backbone resnet50        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type logreg --backbone efficientnet_b0 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type logreg --backbone efficientnet_b1 --img_size 224 --save_dir experiments/classical_ml --use_gpu
 
 ## Linear SVM
-python main.py --task features_ml --clf_type linear_svm --backbone convnext_tiny   --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type linear_svm --backbone resnet18        --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type linear_svm --backbone resnet34        --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type linear_svm --backbone resnet50        --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type linear_svm --backbone efficientnet_b0 --img_size 224 --save_dir experiments/classical_ml --use_gpu
-python main.py --task features_ml --clf_type linear_svm --backbone efficientnet_b1 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type linear_svm --backbone convnext_tiny   --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type linear_svm --backbone resnet18        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type linear_svm --backbone resnet34        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type linear_svm --backbone resnet50        --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type linear_svm --backbone efficientnet_b0 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+python3 main.py --task features_ml --clf_type linear_svm --backbone efficientnet_b1 --img_size 224 --save_dir experiments/classical_ml --use_gpu
+
+
+Mini-ImageNet Dataset (HuggingFace)
+         │
+         ▼
+  HFDatasetWrapper
+  (applies eval_tf: Resize → CenterCrop → ToTensor → Normalize)
+         │
+         ▼
+  DataLoader (batch_size=256, shuffle=True)
+  yields batches of (images, labels)
+  images: (256, 3, 224, 224)
+  labels: (256,)
+         │
+         ▼
+  ResNet18 backbone  [weights frozen / pretrained on ImageNet]
+  ┌─────────────────────────────────────────┐
+  │  Conv1 + BN + ReLU + MaxPool            │
+  │  Layer1 → Layer2 → Layer3 → Layer4      │
+  │  output feature map: (256, 512, 7, 7)   │
+  └─────────────────────────────────────────┘
+         │
+         ▼
+  Global Average Pooling  (mean over H×W)
+  (256, 512, 7, 7)  →  (256, 512)
+         │
+         ▼  [repeat for all batches, concatenate]
+         │
+  X_train: (N, 512)   y_train: (N,)    ← NumPy arrays, all on CPU
+  X_val:   (M, 512)   y_val:   (M,)
+  X_test:  (K, 512)   y_test:  (K,)
+         │
+         ▼
+  Scikit-learn Classifier
+  (LogisticRegression or LinearSVC)
+  clf.fit(X_train, y_train)
+         │
+         ▼
+  clf.predict(X_val / X_test)
+         │
+         ▼
+  accuracy_score  →  val_acc, test_acc  →  saved to .json
+
+
+
+  Input Image
+(256, 3, 224, 224)
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  Conv1:  7×7 conv, 64 filters, stride=2, pad=3      │
+│  BatchNorm + ReLU                                    │
+│  (256, 64, 112, 112)                                 │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  MaxPool: 3×3, stride=2, pad=1                       │
+│  (256, 64, 56, 56)                                   │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  Layer1 — 2× BasicBlock (64 channels, stride=1)      │
+│   BasicBlock: Conv 3×3 → BN → ReLU → Conv 3×3 → BN  │
+│               + skip connection                      │
+│  (256, 64, 56, 56)                                   │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  Layer2 — 2× BasicBlock (128 channels, stride=2)     │
+│   first block downsamples spatial: 56→28             │
+│   skip connection uses 1×1 conv to match channels    │
+│  (256, 128, 28, 28)                                  │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  Layer3 — 2× BasicBlock (256 channels, stride=2)     │
+│   first block downsamples spatial: 28→14             │
+│  (256, 256, 14, 14)                                  │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  Layer4 — 2× BasicBlock (512 channels, stride=2)     │
+│   first block downsamples spatial: 14→7              │
+│  (256, 512, 7, 7)                                    │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  Global Average Pooling (mean over 7×7)              │
+│  (256, 512)                                          │
+└─────────────────────────────────────────────────────┘
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│  [NOT USED in Approach 1]                            │
+│  FC Linear: 512 → 1000  (ImageNet head)              │
+└─────────────────────────────────────────────────────┘
