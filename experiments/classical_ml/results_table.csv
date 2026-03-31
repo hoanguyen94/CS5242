@@ -1,0 +1,13 @@
+backbone,classifier,val_acc,test_acc,feature_time_sec,train_time_sec
+convnext_tiny,LinearSVC,0.9835,0.939,4019.0,309.3
+convnext_tiny,LogisticRegression,0.9841,0.9484,3922.3,21.3
+efficientnet_b0,LinearSVC,0.01,0.01,1932.5,71.1
+efficientnet_b0,LogisticRegression,0.01,0.01,1987.2,0.7
+efficientnet_b1,LinearSVC,0.01,0.01,2682.0,71.1
+efficientnet_b1,LogisticRegression,0.01,0.01,2759.2,0.7
+resnet18,LinearSVC,0.1851,0.182,1837.4,1273.9
+resnet18,LogisticRegression,0.2044,0.1982,1829.9,672.9
+resnet34,LinearSVC,0.1369,0.1388,3009.4,1728.4
+resnet34,LogisticRegression,0.138,0.1334,2976.5,767.7
+resnet50,LinearSVC,0.1136,0.1078,4944.0,13660.0
+resnet50,LogisticRegression,0.156,0.1572,4889.1,1686.4
