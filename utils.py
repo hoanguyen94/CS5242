@@ -195,6 +195,7 @@ def make_transforms(
     else:
         train_tf = transforms.Compose([
             transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0)),
+            transforms.CenterCrop(img_size),
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std),
         ])
@@ -336,10 +337,6 @@ def explore(ds, save_dir: Path) -> None:
     meta_train = gather_image_meta(train)
     meta_val = gather_image_meta(ds["validation"])
     meta_test = gather_image_meta(ds["test"])
-    print("meta_train: ", meta_train)
-    print("meta_val: ", meta_val)
-    print("meta_test: ", meta_test)
-
     with open(save_dir / "image_meta.json", "w") as f:
         json.dump({"train": meta_train, "validation": meta_val, "test": meta_test}, f, indent=2)
     print("Saved image metadata (resolutions/formats/modes).")

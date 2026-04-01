@@ -74,38 +74,8 @@ def build_backbone(
         raise ValueError(f"Backbone '{backbone}' is not supported.")
 
     model_fn = getattr(torchvision.models, backbone)
-    sig = inspect.signature(model_fn)
-
     # Some models accept `weights` keyword (newer torchvision), others accept `pretrained`.
-    kwargs = {}
-
-    def _get_weights_enum(name: str):
-        # Known weights class naming conventions
-        overrides = {
-            "convnext_tiny": "ConvNeXt_Tiny_Weights",
-            "convnext_small": "ConvNeXt_Small_Weights",
-            "convnext_base": "ConvNeXt_Base_Weights",
-            "convnext_large": "ConvNeXt_Large_Weights",
-        }
-        if name in overrides:
-            return overrides[name]
-        # Generic conversion: resnet18 -> ResNet18_Weights
-        parts = name.split("_")
-        camel = "".join(p.capitalize() if p.isalpha() else p.upper() for p in parts)
-        return f"{camel}_Weights"
-
-    if "weights" in sig.parameters:
-        weights = None
-        if pretrained:
-            try:
-                weights_cls = getattr(torchvision.models, _get_weights_enum(backbone))
-                weights = weights_cls.DEFAULT
-            except Exception:
-                weights = None
-        kwargs["weights"] = weights
-    elif "pretrained" in sig.parameters:
-        kwargs["pretrained"] = pretrained
-
+    kwargs = {"weights": "DEFAULT"} if "weights" in inspect.signature(model_fn).parameters else {"pretrained": pretrained}
     model = model_fn(**kwargs)
     model = _replace_classifier_head(model, num_classes)
     return model.to(device)

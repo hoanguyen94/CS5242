@@ -74,7 +74,7 @@ def train_from_scratch(
 # ──────────────────────────────────────────────
 
 def _parse_args():
-    p = argparse.ArgumentParser(description="Approach 3: Train ConvNeXt-Tiny from scratch")
+    p = argparse.ArgumentParser(description="Approach 3: Train models from scratch")
     p.add_argument("--save_dir",   default="experiments/scratch")
     p.add_argument("--epochs",     type=int,   default=5)
     p.add_argument("--batch_size", type=int,   default=128)
