@@ -32,7 +32,19 @@ for path in sorted(glob.glob(os.path.join(FOLDER, "*.json"))):
 
 rows.sort(key=lambda r: (r["backbone"], r["classifier"]))
 
-COLUMNS = ["backbone", "classifier", "val_acc", "test_acc", "feature_time_sec", "train_time_sec"]
+# Rank feature_time_sec and train_time_sec (1 = fastest)
+def add_rank(rows, col):
+    rank_col = col + "_rank"
+    sorted_rows = sorted(rows, key=lambda r: r[col])
+    for rank, r in enumerate(sorted_rows, 1):
+        r[rank_col] = rank
+
+add_rank(rows, "feature_time_sec")
+add_rank(rows, "train_time_sec")
+
+COLUMNS = ["backbone", "classifier", "val_acc", "test_acc",
+           "feature_time_sec", "feature_time_sec_rank",
+           "train_time_sec", "train_time_sec_rank"]
 
 with open(OUTPUT, "w", newline="") as f:
     writer = csv.DictWriter(f, fieldnames=COLUMNS)
