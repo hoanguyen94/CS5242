@@ -45,6 +45,8 @@ def load_mini_imagenet(subset: Optional[int] = None) -> Dict:
     Loads timm/mini-imagenet splits as Hugging Face datasets.
     Optionally subsets each split to `subset` examples for speed.
     """
+    import os
+    os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
     ds = load_dataset("timm/mini-imagenet", download_mode="reuse_cache_if_exists")
     if subset is not None:
         ds = {k: v.select(range(min(subset, len(v)))) for k, v in ds.items()}
