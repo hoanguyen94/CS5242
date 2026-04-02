@@ -31,8 +31,11 @@ def set_seed(seed: int = 24) -> None:
 
 
 def get_device(use_gpu: bool) -> torch.device:
-    if use_gpu and torch.cuda.is_available():
-        return torch.device("cuda")
+    if use_gpu:
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
     return torch.device("cpu")
 
 
