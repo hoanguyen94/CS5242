@@ -1,0 +1,11 @@
+{
+  "approach": "classical_ml",
+  "classifier": "LogisticRegression",
+  "feature_time_sec": 195.48254561424255,
+  "train_time_sec": 141.19397234916687,
+  "val_acc": 0.4579,
+  "test_acc": 0.4418,
+  "n_train": 50000,
+  "n_val": 10000,
+  "n_test": 5000
+}
