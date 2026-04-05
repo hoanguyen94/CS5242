@@ -8,6 +8,7 @@ Mini-ImageNet using one of three freeze policies:
   • backbone   — freeze all feature stages; train classifier head only
   • last_stage — freeze early stages; train the last stage + head
   • none        — fine-tune all parameters end-to-end
+  • lora       — freeze all weights; inject low-rank adapters into Linear layers
 
 Usage (standalone):
     python -m methods.finetune --save_dir experiments/finetune --freeze_policy backbone
@@ -17,6 +18,7 @@ import json
 import time
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn as nn
 from tqdm.auto import tqdm
@@ -27,6 +29,109 @@ from ..model import (
     count_params, try_flops, evaluate,
     print_freeze_summary, extract_features_for_vis,
 )
+
+
+# ──────────────────────────────────────────────
+# LoRA (Low-Rank Adaptation)
+# ──────────────────────────────────────────────
+
+class LoRALinear(nn.Module):
+    """Drop-in replacement for nn.Linear that adds a low-rank adapter.
+
+    Output = W_frozen @ x + (B @ A) @ x * (alpha / rank)
+    """
+
+    def __init__(self, original: nn.Linear, rank: int = 8, alpha: float = 16.0):
+        super().__init__()
+        self.original = original
+        self.rank = rank
+        self.alpha = alpha
+        self.scaling = alpha / rank
+
+        in_f, out_f = original.in_features, original.out_features
+        self.lora_A = nn.Parameter(torch.randn(in_f, rank) * 0.01)
+        self.lora_B = nn.Parameter(torch.zeros(rank, out_f))
+
+        # Freeze the original weight
+        original.weight.requires_grad = False
+        if original.bias is not None:
+            original.bias.requires_grad = False
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        base = self.original(x)
+        lora = (x @ self.lora_A @ self.lora_B) * self.scaling
+        return base + lora
+
+
+def apply_lora(model: nn.Module, rank: int = 8, alpha: float = 16.0) -> int:
+    """Freeze all params, then inject LoRA adapters into Linear layers in the backbone.
+
+    Returns the number of layers replaced.
+    """
+    # Freeze everything first
+    for p in model.parameters():
+        p.requires_grad = False
+
+    replaced = 0
+    for name, module in list(model.named_modules()):
+        for child_name, child in list(module.named_children()):
+            if isinstance(child, nn.Linear) and "classifier" not in name and "fc" not in name and "head" not in name:
+                setattr(module, child_name, LoRALinear(child, rank=rank, alpha=alpha))
+                replaced += 1
+
+    # Always unfreeze the classifier head
+    if hasattr(model, "classifier"):
+        for p in model.classifier.parameters():
+            p.requires_grad = True
+    elif hasattr(model, "fc"):
+        for p in model.fc.parameters():
+            p.requires_grad = True
+    elif hasattr(model, "head"):
+        for p in model.head.parameters():
+            p.requires_grad = True
+
+    print(f"LoRA applied: {replaced} Linear layers adapted (rank={rank}, alpha={alpha})")
+    return replaced
+
+
+# ──────────────────────────────────────────────
+# Mixup / CutMix
+# ──────────────────────────────────────────────
+
+def mixup(x, y, alpha=0.2):
+    """Mixup: blend two random images and their labels."""
+    lam = np.random.beta(alpha, alpha) if alpha > 0 else 1.0
+    idx = torch.randperm(x.size(0), device=x.device)
+    x_mixed = lam * x + (1 - lam) * x[idx]
+    return x_mixed, y, y[idx], lam
+
+
+def cutmix(x, y, alpha=1.0):
+    """CutMix: paste a random patch from one image onto another."""
+    lam = np.random.beta(alpha, alpha) if alpha > 0 else 1.0
+    idx = torch.randperm(x.size(0), device=x.device)
+    _, _, H, W = x.shape
+
+    # Random box
+    cut_ratio = np.sqrt(1 - lam)
+    rh, rw = int(H * cut_ratio), int(W * cut_ratio)
+    cy, cx = np.random.randint(H), np.random.randint(W)
+    y1 = np.clip(cy - rh // 2, 0, H)
+    y2 = np.clip(cy + rh // 2, 0, H)
+    x1 = np.clip(cx - rw // 2, 0, W)
+    x2 = np.clip(cx + rw // 2, 0, W)
+
+    x_cut = x.clone()
+    x_cut[:, :, y1:y2, x1:x2] = x[idx, :, y1:y2, x1:x2]
+
+    # Adjust lambda to actual area ratio
+    lam = 1 - (y2 - y1) * (x2 - x1) / (H * W)
+    return x_cut, y, y[idx], lam
+
+
+def mix_criterion(criterion, logits, y_a, y_b, lam):
+    """Compute mixed loss for Mixup/CutMix."""
+    return lam * criterion(logits, y_a) + (1 - lam) * criterion(logits, y_b)
 
 
 def train_finetune(
@@ -42,6 +147,10 @@ def train_finetune(
     use_pretrained: bool = True,
     save_dir: Path = Path("./outputs"),
     patience: int = 3,
+    lora_rank: int = 8,
+    lora_alpha: float = 16.0,
+    mix_mode: str = "none",
+    mix_alpha: float = 0.2,
 ) -> tuple:
     """
     Fine-tune (or train from scratch) a backbone on the provided dataset.
@@ -75,7 +184,10 @@ def train_finetune(
     )
     print("Model parameters: ", model)
     
-    set_freeze_policy(model, freeze_policy)
+    if freeze_policy == "lora":
+        apply_lora(model, rank=lora_rank, alpha=lora_alpha)
+    else:
+        set_freeze_policy(model, freeze_policy)
     print_freeze_summary(model)
 
     optimizer = torch.optim.AdamW(
@@ -84,7 +196,8 @@ def train_finetune(
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
     ce = nn.CrossEntropyLoss()
 
-    tag = f"{backbone}_{freeze_policy}_{'pre' if use_pretrained else 'scratch'}"
+    mix_tag = f"_{mix_mode}" if mix_mode != "none" else ""
+    tag = f"{backbone}_{freeze_policy}_{'pre' if use_pretrained else 'scratch'}{mix_tag}"
     ckpt_path = save_dir / f"{tag}.pt"
 
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -100,6 +213,8 @@ def train_finetune(
         "params_millions": total / 1e6,
         "trainable_params_millions": trainable / 1e6,
         "gflops":          try_flops(model, device=device),
+        "mix_mode":        mix_mode,
+        "mix_alpha":       mix_alpha if mix_mode != "none" else None,
         "epoch_logs":      [],
     }
 
@@ -125,8 +240,19 @@ def train_finetune(
             x = x.to(device, non_blocking=True)
             y = y.to(device, non_blocking=True)
             optimizer.zero_grad(set_to_none=True)
-            logits = model(x)
-            loss = ce(logits, y)
+
+            if mix_mode == "mixup":
+                x, y_a, y_b, lam = mixup(x, y, alpha=mix_alpha)
+                logits = model(x)
+                loss = mix_criterion(ce, logits, y_a, y_b, lam)
+            elif mix_mode == "cutmix":
+                x, y_a, y_b, lam = cutmix(x, y, alpha=mix_alpha)
+                logits = model(x)
+                loss = mix_criterion(ce, logits, y_a, y_b, lam)
+            else:
+                logits = model(x)
+                loss = ce(logits, y)
+
             loss.backward()
             optimizer.step()
             loss_accum += loss.item() * y.size(0)

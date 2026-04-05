@@ -29,6 +29,9 @@ def train_from_scratch(
     batch_size: int = 128,
     lr: float = 1e-4,
     save_dir: Path = Path("./outputs"),
+    patience: int = 7,
+    mix_mode: str = "none",
+    mix_alpha: float = 0.2,
 ) -> tuple:
     """
     Train a ConvNeXt-Tiny from random initialisation (no pretrained weights).
@@ -45,6 +48,9 @@ def train_from_scratch(
         batch_size:  Mini-batch size.
         lr:          Learning rate for AdamW.
         save_dir:    Directory for checkpoint and results JSON.
+        patience:    Early stopping patience.
+        mix_mode:    'none', 'mixup', or 'cutmix'.
+        mix_alpha:   Beta distribution parameter for mixing.
 
     Returns:
         (results dict, path to best checkpoint)
@@ -61,4 +67,7 @@ def train_from_scratch(
         freeze_policy="none",
         use_pretrained=False,
         save_dir=save_dir,
+        patience=patience,
+        mix_mode=mix_mode,
+        mix_alpha=mix_alpha,
     )
