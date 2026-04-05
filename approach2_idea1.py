@@ -12,14 +12,20 @@ Improvements over the baseline finetune.py:
 
 Usage
 -----
-  # Basic run (uses existing mean/std file if present)
-  python approach2_idea1.py --save_dir experiments/idea1 --use_gpu
+  # Basic run on CPU (uses existing mean/std file if present)
+  python approach2_idea1.py --save_dir experiments/idea1
+
+  # Apple Silicon GPU (MPS)
+  python approach2_idea1.py --save_dir experiments/idea1 --device mps
+
+  # NVIDIA GPU
+  python approach2_idea1.py --save_dir experiments/idea1 --device cuda
 
   # With subset for quick testing
-  python approach2_idea1.py --save_dir experiments/idea1 --use_gpu --subset 2000
+  python approach2_idea1.py --save_dir experiments/idea1 --device mps --subset 2000
 
   # Full run, more epochs
-  python approach2_idea1.py --save_dir experiments/idea1 --use_gpu --epochs 30
+  python approach2_idea1.py --save_dir experiments/idea1 --device mps --epochs 30
 """
 
 import argparse
@@ -33,7 +39,7 @@ import torch.nn as nn
 from torchvision import transforms
 
 from utils import (
-    ensure_dir, load_mini_imagenet, set_seed, get_device,
+    ensure_dir, load_mini_imagenet, set_seed,
     make_loaders, HFDatasetWrapper,
 )
 from model import build_backbone, count_params, try_flops, evaluate
@@ -377,7 +383,9 @@ def _parse_args():
                    help="Dropout rate in MLP head")
     p.add_argument("--label_smooth",  type=float, default=0.1)
     p.add_argument("--seed",          type=int,   default=24)
-    p.add_argument("--use_gpu",       action="store_true")
+    p.add_argument("--device",        default="cpu",
+                   choices=["cpu", "cuda", "mps"],
+                   help="Compute device: cpu | cuda | mps")
     p.add_argument("--subset",        type=int,   default=None,
                    help="Limit examples per split (for quick testing)")
     return p.parse_args()
@@ -386,7 +394,7 @@ def _parse_args():
 if __name__ == "__main__":
     args = _parse_args()
     set_seed(args.seed)
-    device   = get_device(args.use_gpu)
+    device   = torch.device(args.device)
     save_dir = Path(args.save_dir)
 
     print(f"Device: {device}  |  save_dir: {save_dir}")
