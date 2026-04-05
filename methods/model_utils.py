@@ -137,6 +137,20 @@ class ConvNeXtBlock(nn.Module):
         return x
 
 
+def build_backbone(
+    backbone: str = "convnext_tiny",
+    num_classes: int = 100,
+    device: torch.device = torch.device("cpu"),
+) -> nn.Module:
+    """Builds a backbone model with the specified number of output classes."""
+
+    if backbone == "resnet18_scratch":
+        model = ResNet([2, 2, 2, 2], num_classes=num_classes)
+        return model.to(device)
+    if backbone == "convnext_tiny_scratch":
+        model = ConvNeXt(num_classes=num_classes)
+        return model.to(device)
+
 class ConvNeXt(nn.Module):
     """ ConvNeXt
         A PyTorch impl of : `A ConvNet for the 2020s`  - https://arxiv.org/pdf/2201.03545.pdf
