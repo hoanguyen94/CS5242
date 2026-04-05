@@ -1,9 +1,20 @@
 import inspect
+import time
 
 import torch.nn as nn
 import torch
 import torchvision
 from torch.nn import functional as F
+import argparse
+import copy
+from typing import Dict, List, Tuple, Optional
+
+# Optional FLOPs (handled gracefully if not installed)
+try:
+    from thop import profile
+    THOP_AVAILABLE = True
+except Exception:
+    THOP_AVAILABLE = False
 
 
 # ──────────────────────────────────────────────
@@ -188,7 +199,7 @@ class ourblock(nn.Module):
     """
     def __init__(self, dim, layer_scale_init_value=1e-6):
         super().__init__()
-        self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
+        # self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
 
         self.dwconv = nn.Conv2d(
             dim, 
@@ -237,8 +248,10 @@ class ournet(nn.Module):
         self.downsample_layers.append(stem)
         for i in range(3):
             downsample_layer = nn.Sequential(
-                    LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
-                    nn.Conv2d(dims[i], dims[i+1], kernel_size=2, stride=2),
+                    # LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
+                    # nn.Conv2d(dims[i], dims[i+1], kernel_size=2, stride=2),
+                    nn.Conv2d(dims[i], dims[i+1], kernel_size=1),
+                    nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
             )
             self.downsample_layers.append(downsample_layer)
 
@@ -254,8 +267,8 @@ class ournet(nn.Module):
 
     def forward_features(self, x):
         for i in range(4):
-            x = self.downsample_layersi
-            x = self.stagesi
+            x = self.downsample_layers[i](x)
+            x = self.stages[i](x)
         return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
 
     def forward(self, x):
@@ -264,4 +277,100 @@ class ournet(nn.Module):
         return x
 
 
+# ──────────────────────────────────────────────
+# Model Profiling
+# ──────────────────────────────────────────────
 
+def count_params(model: nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters())
+
+
+def try_flops(
+    model: nn.Module,
+    img_size: int = 224,
+    device: torch.device = torch.device("cpu"),
+) -> Optional[float]:
+    """Returns GFLOPs, or None if thop is not installed."""
+    if not THOP_AVAILABLE:
+        return None
+    dummy = torch.randn(1, 3, img_size, img_size, device=device)
+    model_copy = copy.deepcopy(model).to(device)
+    model_copy.eval()
+    flops, _ = profile(model_copy, inputs=(dummy,), verbose=False)
+    return flops / 1e9
+
+
+# ──────────────────────────────────────────────
+# Sanity Check / Profiling
+# ──────────────────────────────────────────────
+
+def run_sanity_check(backbone: str, img_size: int, device: torch.device):
+    """
+    Builds a model, profiles its parameters and FLOPs, and performs a
+    forward pass with a random tensor to check for errors.
+    """
+    
+    print("─" * 80)
+    print("Running Sanity Check: Model Profiling")
+    if backbone == "resnet18_scratch":
+        model = ResNet([2, 2, 2, 2], num_classes=100)
+    if backbone == "convnext_tiny_scratch":
+        model = ConvNeXt(num_classes=100)
+    if backbone == "ournet":
+        model = ournet(num_classes=100)
+    batch_size = 4  # Use a small batch size for the sanity check
+    dummy_input = torch.randn(batch_size, 3, img_size, img_size, device=device)
+
+    print(f"Profiling model '{backbone}' with input size {dummy_input.shape}...")
+    print(f"  - Parameters: {count_params(model) / 1e6:.2f}M")
+    gflops = try_flops(model, img_size=img_size, device=device)
+    print(f"  - GFLOPs: {gflops:.2f}" if gflops is not None else "  - GFLOPs: thop not installed")
+    
+    # --- Inference time measurement ---
+    warmup_iters = 10
+    timing_iters = 100
+    
+    with torch.no_grad():
+        output = model(dummy_input)
+        # Warmup runs
+        for _ in range(warmup_iters):
+            _ = model(dummy_input)
+
+        # Timing runs
+        if device.type == 'cuda':
+            torch.cuda.synchronize()
+        t_start = time.time()
+        for _ in range(timing_iters):
+            _ = model(dummy_input)
+        if device.type == 'cuda':
+            torch.cuda.synchronize()
+        t_end = time.time()
+
+    total_time_s = t_end - t_start
+    time_per_batch_ms = (total_time_s / timing_iters) * 1000
+    time_per_image_ms = time_per_batch_ms / batch_size
+    print(f"  - Inference time: {time_per_image_ms:.3f} ms/image ({batch_size} images/batch)")
+    print(f"  - Output shape for a batch: {output.shape}")
+    print("Sanity check complete. Exiting.")
+    print("─" * 80)
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser(description="Model utility script for sanity checks.")
+    p.add_argument("--backbone",   default="resnet18_scratch",
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50",
+                            "efficientnet_b0", "efficientnet_b1", "resnet18_scratch",
+                            "convnext_tiny_scratch", "ournet"])
+    p.add_argument("--img_size",   type=int,   default=32)
+    p.add_argument("--use_gpu",    action="store_true")
+    args = p.parse_args()
+
+    # Late import to avoid circular dependency issues if this file is imported
+    dev =  torch.device("cuda") if args.use_gpu and torch.cuda.is_available() else torch.device("cpu")
+
+
+    run_sanity_check(
+        backbone=args.backbone,
+        img_size=args.img_size,
+        device=dev
+    )

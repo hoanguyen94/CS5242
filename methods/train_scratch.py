@@ -25,8 +25,8 @@ from utils import (
     ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
     set_seed, get_device,
 )
-# from model_utils import build_backbone
-from model import count_params, try_flops, evaluate, build_backbone
+from model import evaluate, build_backbone
+from .model_utils import run_sanity_check
 
 
 def train_from_scratch(
@@ -40,6 +40,7 @@ def train_from_scratch(
     lr: float = 1e-4,
     lr_scheduler: str = "cosine",
     warmup_epochs: int = 1,
+    # sanity_check is handled by the caller, no need to pass it here
     save_dir: Path = Path("./outputs"),
 ) -> tuple:
     """
@@ -55,7 +56,6 @@ def train_from_scratch(
         batch_size:  Mini-batch size.
         lr:          Learning rate for AdamW.
         lr_scheduler: Type of LR scheduler to use ('cosine', 'step', 'none').
-        warmup_epochs: Number of epochs for linear LR warmup.
         save_dir:    Directory for checkpoint and results JSON.
 
     Returns:
@@ -215,8 +215,10 @@ def _parse_args():
     p.add_argument("--warmup_epochs", type=int, default=1,
                    help="Number of epochs for linear learning rate warmup.")
     p.add_argument("--img_size",   type=int,   default=32)
+    p.add_argument("--sanity_check", action="store_true",
+                   help="Run a quick profiling sanity check on a random tensor and exit.")
     p.add_argument("--backbone",   default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1", "resnet18_scratch", "convnext_tiny_scratch"])
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1", "resnet18_scratch", "convnext_tiny_scratch", "ournet"])
     p.add_argument("--use_aug",    action="store_true")
     p.add_argument("--seed",       type=int,   default=42)
     p.add_argument("--use_gpu",    action="store_true")
@@ -230,21 +232,24 @@ if __name__ == "__main__":
     device   = get_device(args.use_gpu)
     save_dir = Path(args.save_dir)
 
-    print("Loading dataset …")
-    ds = load_mini_imagenet(subset=args.subset)
+    if args.sanity_check:
+        run_sanity_check(backbone=args.backbone, img_size=args.img_size, device=device)
+    else:
+        print("Loading dataset …")
+        ds = load_mini_imagenet(subset=args.subset)
 
-    train_tf, eval_tf, _ = make_transforms(img_size=args.img_size, use_aug=args.use_aug)
+        train_tf, eval_tf, _ = make_transforms(img_size=args.img_size, use_aug=args.use_aug)
 
-    train_from_scratch(
-        ds=ds,
-        train_tf=train_tf,
-        eval_tf=eval_tf,
-        device=device,
-        backbone=args.backbone,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        lr=args.lr,
-        lr_scheduler=args.lr_scheduler,
-        warmup_epochs=args.warmup_epochs,
-        save_dir=save_dir,
-    )
+        train_from_scratch(
+            ds=ds,
+            train_tf=train_tf,
+            eval_tf=eval_tf,
+            device=device,
+            backbone=args.backbone,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            lr=args.lr,
+            lr_scheduler=args.lr_scheduler,
+            warmup_epochs=args.warmup_epochs,
+            save_dir=save_dir,
+        )
