@@ -31,8 +31,11 @@ def set_seed(seed: int = 24) -> None:
 
 
 def get_device(use_gpu: bool) -> torch.device:
-    if use_gpu and torch.cuda.is_available():
-        return torch.device("cuda")
+    if use_gpu:
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
     return torch.device("cpu")
 
 
@@ -45,6 +48,8 @@ def load_mini_imagenet(subset: Optional[int] = None) -> Dict:
     Loads timm/mini-imagenet splits as Hugging Face datasets.
     Optionally subsets each split to `subset` examples for speed.
     """
+    import os
+    os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
     ds = load_dataset("timm/mini-imagenet", download_mode="reuse_cache_if_exists")
     if subset is not None:
         ds = {k: v.select(range(min(subset, len(v)))) for k, v in ds.items()}

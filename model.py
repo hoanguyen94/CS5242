@@ -86,6 +86,19 @@ def build_backbone(
             "convnext_small": "ConvNeXt_Small_Weights",
             "convnext_base": "ConvNeXt_Base_Weights",
             "convnext_large": "ConvNeXt_Large_Weights",
+            "resnet18": "ResNet18_Weights",
+            "resnet34": "ResNet34_Weights",
+            "resnet50": "ResNet50_Weights",
+            "resnet101": "ResNet101_Weights",
+            "resnet152": "ResNet152_Weights",
+            "efficientnet_b0": "EfficientNet_B0_Weights",
+            "efficientnet_b1": "EfficientNet_B1_Weights",
+            "efficientnet_b2": "EfficientNet_B2_Weights",
+            "efficientnet_b3": "EfficientNet_B3_Weights",
+            "efficientnet_b4": "EfficientNet_B4_Weights",
+            "efficientnet_b5": "EfficientNet_B5_Weights",
+            "efficientnet_b6": "EfficientNet_B6_Weights",
+            "efficientnet_b7": "EfficientNet_B7_Weights",
         }
         if name in overrides:
             return overrides[name]
