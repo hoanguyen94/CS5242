@@ -105,6 +105,7 @@ class LayerNorm(nn.Module):
             return x
 
 
+
 class ConvNeXtBlock(nn.Module):
     """ ConvNeXt Block.
     Args:
@@ -135,21 +136,6 @@ class ConvNeXtBlock(nn.Module):
 
         x = input + x
         return x
-
-
-def build_backbone(
-    backbone: str = "convnext_tiny",
-    num_classes: int = 100,
-    device: torch.device = torch.device("cpu"),
-) -> nn.Module:
-    """Builds a backbone model with the specified number of output classes."""
-
-    if backbone == "resnet18_scratch":
-        model = ResNet([2, 2, 2, 2], num_classes=num_classes)
-        return model.to(device)
-    if backbone == "convnext_tiny_scratch":
-        model = ConvNeXt(num_classes=num_classes)
-        return model.to(device)
 
 class ConvNeXt(nn.Module):
     """ ConvNeXt
@@ -192,3 +178,94 @@ class ConvNeXt(nn.Module):
         x = self.forward_features(x)
         x = self.head(x)
         return x
+
+
+
+
+
+
+class ourblock(nn.Module):
+    """ ConvNeXt Block.
+    Args:
+        dim (int): Number of input channels.
+        layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
+    """
+    def __init__(self, dim, layer_scale_init_value=1e-6):
+        super().__init__()
+        self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
+
+        self.dwconv = nn.Conv2d(
+            dim, 
+            dim, 
+            kernel_size=3, 
+            padding=3,      # needed to preserve spatial size
+            dilation=3, 
+            groups=dim      # still depthwise
+        )
+
+        self.norm = LayerNorm(dim, eps=1e-6)
+        self.pwconv1 = nn.Linear(dim, 4 * dim) # pointwise/1x1 convs, implemented with linear layers
+        self.act = nn.GELU()
+        self.pwconv2 = nn.Linear(4 * dim, dim)
+        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((dim)),
+                                    requires_grad=True) if layer_scale_init_value > 0 else None
+
+    def forward(self, x):
+        input = x
+        x = self.dwconv(x)
+        x = x.permute(0, 2, 3, 1) # (N, C, H, W) -> (N, H, W, C)
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.pwconv2(x)
+        if self.gamma is not None:
+            x = self.gamma * x
+        x = x.permute(0, 3, 1, 2) # (N, H, W, C) -> (N, C, H, W)
+
+        x = input + x
+        return x
+
+class ournet(nn.Module):
+    """ ConvNeXt
+        A PyTorch impl of : `A ConvNet for the 2020s`  - https://arxiv.org/pdf/2201.03545.pdf
+    """
+    def __init__(self, in_chans=3, num_classes=100,
+                 depths=[3, 3, 9, 3], dims=[96, 192, 384, 768]):
+        super().__init__()
+
+        self.downsample_layers = nn.ModuleList()
+        stem = nn.Sequential(
+            nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
+            LayerNorm(dims[0], eps=1e-6, data_format="channels_first")
+        )
+        self.downsample_layers.append(stem)
+        for i in range(3):
+            downsample_layer = nn.Sequential(
+                    LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
+                    nn.Conv2d(dims[i], dims[i+1], kernel_size=2, stride=2),
+            )
+            self.downsample_layers.append(downsample_layer)
+
+        self.stages = nn.ModuleList()
+        for i in range(4):
+            stage = nn.Sequential(
+                *[ourblock(dim=dims[i]) for j in range(depths[i])]
+            )
+            self.stages.append(stage)
+
+        self.norm = nn.LayerNorm(dims[-1], eps=1e-6) # final norm layer
+        self.head = nn.Linear(dims[-1], num_classes)
+
+    def forward_features(self, x):
+        for i in range(4):
+            x = self.downsample_layersi
+            x = self.stagesi
+        return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
+
+    def forward(self, x):
+        x = self.forward_features(x)
+        x = self.head(x)
+        return x
+
+
+

@@ -68,9 +68,9 @@ def build_backbone(
     device: torch.device = torch.device("cpu"),
 ) -> nn.Module:
     """Builds a backbone model with the specified number of output classes."""
+    from methods.model_utils import ResNet, ConvNeXt
 
     if backbone == "resnet18_scratch":
-        from methods.model_utils import ResNet, ConvNeXt
         model = ResNet([2, 2, 2, 2], num_classes=num_classes)
         return model.to(device)
     if backbone == "convnext_tiny_scratch":
