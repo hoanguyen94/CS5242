@@ -170,18 +170,14 @@ class ConvNeXt(nn.Module):
 
     def forward_features(self, x):
         for i in range(4):
-            x = self.downsample_layers[i]
-            x = self.stagesi
+            x = self.downsample_layers[i](x)
+            x = self.stages[i](x)
         return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
 
     def forward(self, x):
         x = self.forward_features(x)
         x = self.head(x)
         return x
-
-
-
-
 
 
 class ourblock(nn.Module):
