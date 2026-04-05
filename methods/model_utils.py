@@ -266,9 +266,14 @@ class ournet(nn.Module):
         self.head = nn.Linear(dims[-1], num_classes)
 
     def forward_features(self, x):
-        for i in range(4):
-            x = self.downsample_layers[i](x)
-            x = self.stages[i](x)
+        x = self.downsample_layers[0](x)
+        x = self.stages[0](x)
+        x = self.downsample_layers[1](x)
+        x = self.stages[1](x)
+        x = self.downsample_layers[2](x)
+        x = self.stages[2](x)
+        x = self.downsample_layers[3](x)
+        x = self.stages[3](x)
         return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
 
     def forward(self, x):
@@ -317,7 +322,11 @@ def run_sanity_check(backbone: str, img_size: int, device: torch.device):
     if backbone == "convnext_tiny_scratch":
         model = ConvNeXt(num_classes=100)
     if backbone == "ournet":
-        model = ournet(num_classes=100)
+        # model = ournet(num_classes=100, depths=[2, 2, 2, 2], dims=[96, 192, 384, 768]) 
+        model = ournet(num_classes=100, depths=[2, 2, 2, 2], dims=[64, 128, 256, 512]) 
+    model = model.to(device)
+    model.eval()
+
     batch_size = 4  # Use a small batch size for the sanity check
     dummy_input = torch.randn(batch_size, 3, img_size, img_size, device=device)
 

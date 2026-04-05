@@ -26,7 +26,7 @@ from utils import (
     set_seed, get_device,
 )
 from model import evaluate, build_backbone
-from .model_utils import run_sanity_check
+from .model_utils import run_sanity_check, count_params, try_flops
 
 
 def train_from_scratch(
@@ -210,7 +210,7 @@ def _parse_args():
     p.add_argument("--epochs",     type=int,   default=5)
     p.add_argument("--batch_size", type=int,   default=128)
     p.add_argument("--lr",         type=float, default=1e-4)
-    p.add_argument("--lr_scheduler", default="cosine", choices=["cosine", "step", "none"],
+    p.add_argument("--lr_scheduler", default="none", choices=["cosine", "step", "none"],
                    help="Learning rate scheduler type.")
     p.add_argument("--warmup_epochs", type=int, default=1,
                    help="Number of epochs for linear learning rate warmup.")
