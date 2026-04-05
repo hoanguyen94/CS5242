@@ -58,7 +58,7 @@ class HFDatasetWrapper(torch.utils.data.Dataset):
         return x, y
 
 
-def make_loaders(ds, train_tf, eval_tf, batch_size: int = 128, num_workers: int = 0):
+def make_loaders(ds, train_tf, eval_tf, batch_size: int = 128, num_workers: int = 4):
     train_ds = HFDatasetWrapper(ds["train"], train_tf)
     val_ds = HFDatasetWrapper(ds["validation"], eval_tf)
     test_ds = HFDatasetWrapper(ds["test"], eval_tf)
