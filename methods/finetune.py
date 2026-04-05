@@ -125,7 +125,13 @@ def train_finetune(
 
         if val_acc > best_val:
             best_val = val_acc
-            torch.save(model.state_dict(), ckpt_path)
+            checkpoint = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "best_val_acc": best_val,
+            }
+            torch.save(checkpoint, ckpt_path)
 
         log = {
             "epoch":           epoch,
@@ -146,7 +152,8 @@ def train_finetune(
     results["total_train_time_sec"] = time.time() - t0_total
 
     # Per-image inference timing & peak GPU memory
-    model.load_state_dict(torch.load(ckpt_path, map_location=device))
+    checkpoint = torch.load(ckpt_path, map_location=device)
+    model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     n_imgs, t_inf = 0, 0.0
     with torch.no_grad():
