@@ -25,8 +25,8 @@ from utils import (
     ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
     set_seed, get_device,
 )
-from model_utils import build_backbone
-from model import count_params, try_flops, evaluate
+# from model_utils import build_backbone
+from model import count_params, try_flops, evaluate, build_backbone
 
 
 def train_from_scratch(
