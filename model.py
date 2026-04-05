@@ -22,7 +22,7 @@ try:
 except Exception:
     THOP_AVAILABLE = False
 
-from methods.model_utils import ResNet, BasicBlock
+from methods.model_utils import ResNet, ConvNeXt
 
 # ──────────────────────────────────────────────
 # Model Construction
@@ -71,7 +71,10 @@ def build_backbone(
     """Builds a backbone model with the specified number of output classes."""
 
     if backbone == "resnet18_scratch":
-        model = ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
+        model = ResNet([2, 2, 2, 2], num_classes=num_classes)
+        return model.to(device)
+    if backbone == "convnext_tiny_scratch":
+        model = ConvNeXt(num_classes=num_classes)
         return model.to(device)
 
     # Use torchvision model builder if available

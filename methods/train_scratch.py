@@ -25,7 +25,8 @@ from utils import (
     ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
     set_seed, get_device,
 )
-from model import build_backbone, count_params, try_flops, evaluate
+from model_utils import build_backbone
+from model import count_params, try_flops, evaluate
 
 
 def train_from_scratch(
@@ -163,7 +164,7 @@ def _parse_args():
     p.add_argument("--lr",         type=float, default=1e-4)
     p.add_argument("--img_size",   type=int,   default=224)
     p.add_argument("--backbone",   default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1", "resnet18_scratch"])
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1", "resnet18_scratch", "convnext_tiny_scratch"])
     p.add_argument("--use_aug",    action="store_true")
     p.add_argument("--seed",       type=int,   default=24)
     p.add_argument("--use_gpu",    action="store_true")
