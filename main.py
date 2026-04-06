@@ -79,7 +79,11 @@ def parse_args():
     p.add_argument("--batch_size",  type=int,   default=128)
     p.add_argument("--epochs",      type=int,   default=5)
     p.add_argument("--lr",          type=float, default=1e-4)
-
+    p.add_argument("--lr_scheduler", default="none", choices=["cosine", "step", "none"],
+                   help="Learning rate scheduler type.")
+    p.add_argument("--warmup_epochs", type=int, default=1,
+                   help="Number of epochs for linear learning rate warmup.")
+    
     # Approach 2: freeze policy
     p.add_argument("--freeze_policy", default="backbone",
                    choices=["backbone", "last_stage", "none"])
