@@ -68,13 +68,16 @@ def build_backbone(
     device: torch.device = torch.device("cpu"),
 ) -> nn.Module:
     """Builds a backbone model with the specified number of output classes."""
-    from methods.model_utils import ResNet, ConvNeXt
+    from methods.model_utils import ResNet, ConvNeXt, ournet
 
     if backbone == "resnet18_scratch":
         model = ResNet([2, 2, 2, 2], num_classes=num_classes)
         return model.to(device)
     if backbone == "convnext_tiny_scratch":
         model = ConvNeXt(num_classes=num_classes)
+        return model.to(device)
+    if backbone == "ournet":
+        model = ournet(num_classes=num_classes, depths=[2, 2, 2, 2], dims=[48, 96, 192, 384])
         return model.to(device)
 
     # Use torchvision model builder if available
