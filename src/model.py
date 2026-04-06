@@ -100,6 +100,11 @@ def build_backbone(
                 weights_cls = getattr(torchvision.models, _get_weights_enum(backbone))
                 weights = weights_cls.DEFAULT
             except Exception:
+                import warnings
+                warnings.warn(
+                    f"Could not find pretrained weights for '{backbone}' "
+                    f"(tried {_get_weights_enum(backbone)}). Training from random init."
+                )
                 weights = None
         kwargs["weights"] = weights
     elif "pretrained" in sig.parameters:
