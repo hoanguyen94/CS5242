@@ -199,16 +199,16 @@ class ourblock(nn.Module):
     """
     def __init__(self, dim, layer_scale_init_value=1e-6):
         super().__init__()
-        # self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
+        self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
 
-        self.dwconv = nn.Conv2d(
-            dim, 
-            dim, 
-            kernel_size=3, 
-            padding=3,      # needed to preserve spatial size
-            dilation=3, 
-            groups=dim      # still depthwise
-        )
+        # self.dwconv = nn.Conv2d(
+        #     dim, 
+        #     dim, 
+        #     kernel_size=3, 
+        #     padding=3,      # needed to preserve spatial size
+        #     dilation=3, 
+        #     groups=dim      # still depthwise
+        # )
 
         self.norm = LayerNorm(dim, eps=1e-6)
         self.pwconv1 = nn.Linear(dim, 4 * dim) # pointwise/1x1 convs, implemented with linear layers
@@ -266,14 +266,9 @@ class ournet(nn.Module):
         self.head = nn.Linear(dims[-1], num_classes)
 
     def forward_features(self, x):
-        x = self.downsample_layers[0](x)
-        x = self.stages[0](x)
-        x = self.downsample_layers[1](x)
-        x = self.stages[1](x)
-        x = self.downsample_layers[2](x)
-        x = self.stages[2](x)
-        x = self.downsample_layers[3](x)
-        x = self.stages[3](x)
+        for i in range(4):
+            x = self.downsample_layers[i](x)
+            x = self.stages[i](x)
         return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
 
     def forward(self, x):
@@ -323,7 +318,7 @@ def run_sanity_check(backbone: str, img_size: int, device: torch.device):
         model = ConvNeXt(num_classes=100)
     if backbone == "ournet":
         # model = ournet(num_classes=100, depths=[2, 2, 2, 2], dims=[96, 192, 384, 768]) 
-        model = ournet(num_classes=100, depths=[2, 2, 2, 2], dims=[64, 128, 256, 512]) 
+        model = ournet(num_classes=100, depths=[2, 2, 2, 2], dims=[48, 96, 192, 384]) 
     model = model.to(device)
     model.eval()
 
