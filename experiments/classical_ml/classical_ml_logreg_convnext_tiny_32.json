@@ -1,0 +1,15 @@
+{
+  "approach": "classical_ml",
+  "backbone": "convnext_tiny",
+  "classifier": "logreg",
+  "test_acc": 0.4418,
+  "val_acc": 0.4578,
+  "Pretrained Models": true,
+  "Number of parameters (mil)": 27.897028,
+  "Test accuracy (%)": 44.18,
+  "Test loss (Cross Entropy)": 3.6851509845529056,
+  "Training Time (seconds)": 22.74753499031067,
+  "Inference Time per Image (ms)": 3.02386155128479,
+  "GPU": true,
+  "Image Size": 32
+}

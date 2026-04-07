@@ -1,0 +1,15 @@
+{
+  "approach": "classical_ml",
+  "backbone": "convnext_tiny",
+  "classifier": "linear_svm",
+  "test_acc": 0.939,
+  "val_acc": 0.9835,
+  "Pretrained Models": true,
+  "Number of parameters (mil)": 27.897028,
+  "Test accuracy (%)": 93.89999999999999,
+  "Test loss (Cross Entropy)": NaN,
+  "Training Time (seconds)": 131.09030771255493,
+  "Inference Time per Image (ms)": 5.474546098709106,
+  "GPU": true,
+  "Image Size": 224
+}

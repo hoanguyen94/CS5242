@@ -1,0 +1,559 @@
+Device: mps
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Generating train split:   0%|          | 0/50000 [00:00<?, ? examples/s]Generating train split:   2%|▏         | 800/50000 [00:00<00:06, 7402.06 examples/s]Generating train split:   5%|▌         | 2700/50000 [00:00<00:03, 13418.59 examples/s]Generating train split:   9%|▉         | 4647/50000 [00:00<00:02, 15782.93 examples/s]Generating train split:  14%|█▍        | 7147/50000 [00:00<00:02, 19194.00 examples/s]Generating train split:  18%|█▊        | 9194/50000 [00:00<00:02, 18834.67 examples/s]Generating train split:  23%|██▎       | 11640/50000 [00:00<00:01, 20143.38 examples/s]Generating train split:  28%|██▊       | 13940/50000 [00:00<00:01, 20646.52 examples/s]Generating train split:  33%|███▎      | 16486/50000 [00:00<00:01, 20573.97 examples/s]Generating train split:  38%|███▊      | 19232/50000 [00:00<00:01, 22335.24 examples/s]Generating train split:  44%|████▎     | 21832/50000 [00:01<00:01, 20092.15 examples/s]Generating train split:  49%|████▉     | 24478/50000 [00:01<00:01, 21650.09 examples/s]Generating train split:  54%|█████▍    | 26878/50000 [00:01<00:01, 22014.47 examples/s]Generating train split:  59%|█████▉    | 29524/50000 [00:01<00:00, 23049.46 examples/s]Generating train split:  65%|██████▌   | 32670/50000 [00:01<00:00, 25171.39 examples/s]Generating train split:  72%|███████▏  | 36016/50000 [00:01<00:00, 23929.24 examples/s]Generating train split:  77%|███████▋  | 38562/50000 [00:01<00:00, 22989.55 examples/s]Generating train split:  84%|████████▍ | 41962/50000 [00:01<00:00, 22493.56 examples/s]Generating train split:  90%|█████████ | 45008/50000 [00:02<00:00, 21613.93 examples/s]Generating train split:  95%|█████████▍| 47454/50000 [00:02<00:00, 21328.11 examples/s]Generating train split: 100%|██████████| 50000/50000 [00:02<00:00, 19998.89 examples/s]Generating train split: 100%|██████████| 50000/50000 [00:02<00:00, 20808.01 examples/s]
+Generating validation split:   0%|          | 0/10000 [00:00<?, ? examples/s]Generating validation split:  22%|██▏       | 2200/10000 [00:00<00:00, 21292.46 examples/s]Generating validation split:  46%|████▋     | 4634/10000 [00:00<00:00, 22240.48 examples/s]Generating validation split:  70%|██████▉   | 6967/10000 [00:00<00:00, 22283.69 examples/s]Generating validation split:  93%|█████████▎| 9267/10000 [00:00<00:00, 22261.97 examples/s]Generating validation split: 100%|██████████| 10000/10000 [00:00<00:00, 22006.31 examples/s]
+Generating test split:   0%|          | 0/5000 [00:00<?, ? examples/s]Generating test split:  36%|███▌      | 1800/5000 [00:00<00:00, 16943.56 examples/s]Generating test split:  72%|███████▏  | 3600/5000 [00:00<00:00, 16956.21 examples/s]Generating test split: 100%|██████████| 5000/5000 [00:00<00:00, 18481.96 examples/s]
+[convnext_tiny | linear_svm @ 224] Extracting features ...
+/Users/david/working/antigravity/CS5242/.venv/lib/python3.13/site-packages/PIL/TiffImagePlugin.py:949: UserWarning: Corrupt EXIF data.  Expecting to read 2 bytes but only got 0. 
+  warnings.warn(str(msg))
+Saved -> experiments/classical_ml/classical_ml_linear_svm_convnext_tiny_224.json
+[resnet18 | linear_svm @ 224] Extracting features ...
+Fatal Python error: Fatal Python error: init_sys_streamsFatal Python error: Fatal Python error: init_sys_streams: init_sys_streamsinit_sys_streams: Fatal Python error: can't initialize sys standard streamscan't initialize sys standard streams: : can't initialize sys standard streams
+can't initialize sys standard streams
+Python runtime state: init_sys_streamscore initializedPython runtime state: Fatal Python error: 
+init_sys_streams: core initialized: 
+Fatal Python error: can't initialize sys standard streamsinit_sys_streamsPython runtime state: Python runtime state: 
+Python runtime state: core initializedcore initializedcan't initialize sys standard streams: 
+
+can't initialize sys standard streams
+Python runtime state: core initialized
+
+core initialized
+Python runtime state: 
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+
+core initialized
+OSError: [Errno 9] Bad file descriptor
+OSError: [Errno 9] Bad file descriptor
+
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0xOSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0Current thread 0xOSError: [Errno 9] Bad file descriptor
+00000001eee298c0 (most recent call first):
+
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+OSError: [Errno 9] Bad file descriptor
+00000001eee298c0OSError: [Errno 9] Bad file descriptor
+Current thread 0x (most recent call first):
+ (most recent call first):
+  <no Python frame>
+  <no Python frame>
+00000001eee298c0 (most recent call first):
+  <no Python frame>
+
+Current thread 0x00000001eee298c0
+ (most recent call first):
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+  <no Python frame>
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed resnet18 | linear_svm: DataLoader worker (pid(s) 57291, 57292, 57293, 57294, 57295, 57296, 57297, 57298) exited unexpectedly
+[resnet34 | linear_svm @ 224] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Failed resnet34 | linear_svm: DataLoader worker (pid 57300) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[resnet50 | linear_svm @ 224] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed resnet50 | linear_svm: DataLoader worker (pid 57309) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[efficientnet_b0 | linear_svm @ 224] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed efficientnet_b0 | linear_svm: DataLoader worker (pid 57317) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[efficientnet_b1 | linear_svm @ 224] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Failed efficientnet_b1 | linear_svm: DataLoader worker (pid 57329) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[convnext_tiny | logreg @ 32] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed convnext_tiny | logreg: DataLoader worker (pid 57338) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[resnet18 | logreg @ 32] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed resnet18 | logreg: DataLoader worker (pid 57346) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[resnet34 | logreg @ 32] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed resnet34 | logreg: DataLoader worker (pid 57354) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[resnet50 | logreg @ 32] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed resnet50 | logreg: DataLoader worker (pid 57362) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[efficientnet_b0 | logreg @ 32] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Failed efficientnet_b0 | logreg: DataLoader worker (pid 57370) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+[efficientnet_b1 | logreg @ 32] Extracting features ...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Failed efficientnet_b1 | logreg: DataLoader worker (pid 57378) exited unexpectedly with exit code 1. Details are lost due to multiprocessing. Rerunning with num_workers=0 may give better error trace.
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001eee298c0 (most recent call first):
+  <no Python frame>

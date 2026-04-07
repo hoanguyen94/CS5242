@@ -1,0 +1,11 @@
+{
+  "approach": "classical_ml",
+  "classifier": "LinearSVC",
+  "feature_time_sec": 158.72144293785095,
+  "train_time_sec": 304.4111316204071,
+  "val_acc": 0.3404,
+  "test_acc": 0.3254,
+  "n_train": 50000,
+  "n_val": 10000,
+  "n_test": 5000
+}

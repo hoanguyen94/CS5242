@@ -1,0 +1,15 @@
+{
+  "approach": "classical_ml",
+  "backbone": "resnet34",
+  "classifier": "logreg",
+  "test_acc": 0.331,
+  "val_acc": 0.3524,
+  "Pretrained Models": true,
+  "Number of parameters (mil)": 21.335972,
+  "Test accuracy (%)": 33.1,
+  "Test loss (Cross Entropy)": 3.165004824615785,
+  "Training Time (seconds)": 71.23479127883911,
+  "Inference Time per Image (ms)": 3.0164504051208496,
+  "GPU": true,
+  "Image Size": 32
+}

@@ -77,7 +77,7 @@ def classical_ml_experiment(
 
     # Build classifier
     if clf_type == "logreg":
-        clf = LogisticRegression(max_iter=2000, n_jobs=-1, verbose=1)
+        clf = LogisticRegression(max_iter=2000, n_jobs=-1, verbose=0)
     elif clf_type == "linear_svm":
         clf = LinearSVC()
     else:

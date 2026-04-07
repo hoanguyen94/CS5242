@@ -1,0 +1,15 @@
+{
+  "approach": "classical_ml",
+  "backbone": "resnet34",
+  "classifier": "linear_svm",
+  "test_acc": 0.8566,
+  "val_acc": 0.9135,
+  "Pretrained Models": true,
+  "Number of parameters (mil)": 21.335972,
+  "Test accuracy (%)": 85.66,
+  "Test loss (Cross Entropy)": NaN,
+  "Training Time (seconds)": 186.98036217689514,
+  "Inference Time per Image (ms)": 3.7641497611999513,
+  "GPU": true,
+  "Image Size": 224
+}

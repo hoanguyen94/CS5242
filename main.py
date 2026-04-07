@@ -125,7 +125,7 @@ def tsne_visualize(
 
     tsne = TSNE(
         n_components=2, perplexity=30, learning_rate="auto",
-        init="pca", random_state=seed, n_iter=1000, verbose=1,
+        init="pca", random_state=seed, n_iter=1000, verbose=0,
     )
     Z = tsne.fit_transform(feats)
 

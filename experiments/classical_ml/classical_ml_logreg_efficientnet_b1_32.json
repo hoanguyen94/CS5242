@@ -1,0 +1,15 @@
+{
+  "approach": "classical_ml",
+  "backbone": "efficientnet_b1",
+  "classifier": "logreg",
+  "test_acc": 0.2076,
+  "val_acc": 0.2196,
+  "Pretrained Models": true,
+  "Number of parameters (mil)": 6.641284,
+  "Test accuracy (%)": 20.76,
+  "Test loss (Cross Entropy)": 3.549492881975026,
+  "Training Time (seconds)": 227.88315796852112,
+  "Inference Time per Image (ms)": 3.015800619125366,
+  "GPU": true,
+  "Image Size": 32
+}

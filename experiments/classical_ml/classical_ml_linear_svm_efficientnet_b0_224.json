@@ -1,0 +1,15 @@
+{
+  "approach": "classical_ml",
+  "backbone": "efficientnet_b0",
+  "classifier": "linear_svm",
+  "test_acc": 0.9194,
+  "val_acc": 0.9575,
+  "Pretrained Models": true,
+  "Number of parameters (mil)": 4.135648,
+  "Test accuracy (%)": 91.94,
+  "Test loss (Cross Entropy)": NaN,
+  "Training Time (seconds)": 1751.9931800365448,
+  "Inference Time per Image (ms)": 3.9521808147430417,
+  "GPU": true,
+  "Image Size": 224
+}
