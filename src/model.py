@@ -54,7 +54,6 @@ def _replace_classifier_head(model: nn.Module, num_classes: int) -> nn.Module:
 
     raise ValueError("Unable to replace classifier head for model type: %s" % type(model))
 
-
 def build_backbone(
     backbone: str = "convnext_tiny",
     num_classes: int = 100,
@@ -62,54 +61,25 @@ def build_backbone(
     device: torch.device = torch.device("cpu"),
 ) -> nn.Module:
     """Builds a backbone model with the specified number of output classes."""
+    from methods.model_utils import ResNet, ConvNeXt, ournet
+
+    if backbone == "resnet18_scratch":
+        model = ResNet([2, 2, 2, 2], num_classes=num_classes)
+        return model.to(device)
+    if backbone == "convnext_tiny_scratch":
+        model = ConvNeXt(num_classes=num_classes)
+        return model.to(device)
+    if backbone == "ournet":
+        model = ournet(num_classes=num_classes, depths=[2, 2, 2, 2], dims=[48, 96, 192, 384])
+        return model.to(device)
 
     # Use torchvision model builder if available
     if not hasattr(torchvision.models, backbone):
         raise ValueError(f"Backbone '{backbone}' is not supported.")
 
     model_fn = getattr(torchvision.models, backbone)
-    sig = inspect.signature(model_fn)
-
     # Some models accept `weights` keyword (newer torchvision), others accept `pretrained`.
-    kwargs = {}
-
-    def _get_weights_enum(name: str):
-        # Known weights class naming conventions
-        overrides = {
-            "convnext_tiny": "ConvNeXt_Tiny_Weights",
-            "convnext_small": "ConvNeXt_Small_Weights",
-            "convnext_base": "ConvNeXt_Base_Weights",
-            "convnext_large": "ConvNeXt_Large_Weights",
-            "resnet18": "ResNet18_Weights",
-            "resnet34": "ResNet34_Weights",
-            "resnet50": "ResNet50_Weights",
-            "resnet101": "ResNet101_Weights",
-            "resnet152": "ResNet152_Weights",
-        }
-        if name in overrides:
-            return overrides[name]
-        # Generic conversion: resnet18 -> ResNet18_Weights
-        parts = name.split("_")
-        camel = "".join(p.capitalize() if p.isalpha() else p.upper() for p in parts)
-        return f"{camel}_Weights"
-
-    if "weights" in sig.parameters:
-        weights = None
-        if pretrained:
-            try:
-                weights_cls = getattr(torchvision.models, _get_weights_enum(backbone))
-                weights = weights_cls.DEFAULT
-            except Exception:
-                import warnings
-                warnings.warn(
-                    f"Could not find pretrained weights for '{backbone}' "
-                    f"(tried {_get_weights_enum(backbone)}). Training from random init."
-                )
-                weights = None
-        kwargs["weights"] = weights
-    elif "pretrained" in sig.parameters:
-        kwargs["pretrained"] = pretrained
-
+    kwargs = {"weights": "DEFAULT"} if "weights" in inspect.signature(model_fn).parameters else {"pretrained": pretrained}
     model = model_fn(**kwargs)
     model = _replace_classifier_head(model, num_classes)
     return model.to(device)
