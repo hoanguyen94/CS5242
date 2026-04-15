@@ -36,9 +36,8 @@ import random
 from pathlib import Path
 
 import numpy as np
+from src.methods.model_utils import run_sanity_check
 import torch
-import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
 
 from src.utils import (
     set_seed, get_device, ensure_dir,
@@ -46,8 +45,6 @@ from src.utils import (
 )
 from src.data_processing.data_processing import load_mini_imagenet, explore_dataset, make_transforms, visualize_transforms
 from src.model import build_backbone, extract_convnext_features
-from src.methods import classical_ml_experiment, train_finetune, train_from_scratch
-
 # ──────────────────────────────────────────────
 # Argument Parsing
 # ──────────────────────────────────────────────
@@ -84,7 +81,8 @@ def parse_args():
                    help="Learning rate scheduler type.")
     p.add_argument("--warmup_epochs", type=int, default=1,
                    help="Number of epochs for linear learning rate warmup.")
-    
+    p.add_argument("--sanity_check", action="store_true",
+                help="Run a quick profiling sanity check on a random tensor and exit.")
     # Approach 2: freeze policy
     p.add_argument("--freeze_policy", default="backbone",
                    choices=["backbone", "last_stage", "none"])
@@ -115,6 +113,9 @@ def tsne_visualize(
     seed: int = 42,
 ) -> None:
     """Extract backbone GAP features and render a 2-D t-SNE plot coloured by class."""
+    from sklearn.manifold import TSNE
+    import matplotlib.pyplot as plt
+
     random.seed(seed)
     idxs = list(range(len(ds_split)))
     if len(idxs) > n_samples:
@@ -192,6 +193,8 @@ def main():
                               save_dir=vis_dir, n=8, seed=0)
 
     elif args.task == "features_ml":
+        from src.methods import classical_ml_experiment
+
         classical_ml_experiment(
             ds=ds, eval_tf=eval_tf, device=device,
             backbone=args.backbone,
@@ -201,6 +204,8 @@ def main():
         )
 
     elif args.task == "finetune":
+        from src.methods import train_finetune
+
         train_finetune(
             ds=ds, train_tf=train_tf, eval_tf=eval_tf, device=device,
             backbone=args.backbone,
@@ -210,12 +215,16 @@ def main():
         )
 
     elif args.task == "scratch":
-        train_from_scratch(
-            ds=ds, train_tf=train_tf, eval_tf=eval_tf, device=device,
-            backbone=args.backbone,
-            epochs=args.epochs, batch_size=args.batch_size,
-            lr=args.lr, save_dir=save_dir,
-        )
+        from src.methods import train_from_scratch, run_sanity_check
+        if args.sanity_check:
+            run_sanity_check(backbone=args.backbone, img_size=args.img_size, device=device)
+        else:
+            train_from_scratch(
+                ds=ds, train_tf=train_tf, eval_tf=eval_tf, device=device,
+                backbone=args.backbone,
+                epochs=args.epochs, batch_size=args.batch_size,
+                lr=args.lr, save_dir=save_dir,
+            )
 
     elif args.task == "tsne":
         tsne_visualize(

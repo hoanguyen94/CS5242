@@ -21,11 +21,12 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 
-from utils import (
-    ensure_dir, load_mini_imagenet, make_transforms, make_loaders,
+from ..utils import (
+    ensure_dir, make_loaders,
     set_seed, get_device,
 )
-from model import evaluate, build_backbone
+
+from ..model import evaluate, build_backbone
 from .model_utils import run_sanity_check, count_params, try_flops
 
 
@@ -235,6 +236,8 @@ if __name__ == "__main__":
     if args.sanity_check:
         run_sanity_check(backbone=args.backbone, img_size=args.img_size, device=device)
     else:
+        from src.data_processing.data_processing import load_mini_imagenet, make_transforms
+
         print("Loading dataset …")
         ds = load_mini_imagenet(subset=args.subset)
 
