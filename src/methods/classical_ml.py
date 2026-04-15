@@ -15,9 +15,11 @@ import json
 import time
 from pathlib import Path
 
+import numpy as np
+import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, log_loss
 
 from ..utils import ensure_dir, make_loaders
 from ..model import build_backbone, extract_convnext_features
@@ -88,28 +90,53 @@ def classical_ml_experiment(
     val_acc  = accuracy_score(y_val,  clf.predict(X_val))
     test_acc = accuracy_score(y_test, clf.predict(X_test))
 
+    # Compute test loss (cross entropy) — use predict_proba if available
+    test_loss = None
+    if hasattr(clf, "predict_proba"):
+        test_loss = float(log_loss(y_test, clf.predict_proba(X_test)))
+
+    # Count total backbone parameters (millions)
+    n_params = sum(p.numel() for p in model.parameters()) / 1e6
+
+    # Determine image size from eval transform
+    img_size = 224  # default
+    if hasattr(eval_tf, 'transforms'):
+        for t in eval_tf.transforms:
+            if hasattr(t, 'size'):
+                sz = t.size
+                img_size = sz if isinstance(sz, int) else sz[0]
+                break
+
+    # Measure per-image inference time (feature extraction only)
+    dummy = torch.randn(1, 3, img_size, img_size).to(device)
+    model.eval()
+    with torch.no_grad():
+        for _ in range(10):          # warm-up
+            model(dummy)
+    n_runs = 100
+    t_inf_start = time.time()
+    with torch.no_grad():
+        for _ in range(n_runs):
+            model(dummy)
+    infer_ms = (time.time() - t_inf_start) / n_runs * 1000
+
     results = {
-        "approach":          "classical_ml",
-        "classifier":        clf.__class__.__name__,
-        "feature_time_sec":  feat_time,
-        "train_time_sec":    train_time,
-        "val_acc":           float(val_acc),
-        "test_acc":          float(test_acc),
-        "n_train":           int(len(y_train)),
-        "n_val":             int(len(y_val)),
-        "n_test":            int(len(y_test)),
+        "approach":                     "classical_ml",
+        "classifier":                   clf.__class__.__name__,
+        "backbone":                     backbone,
+        "Image Size":                   img_size,
+        "Number of parameters (mil)":   round(n_params, 2),
+        "val_acc":                      float(val_acc),
+        "Test accuracy (%)":            round(float(test_acc) * 100, 2),
+        "Test loss (Cross Entropy)":    test_loss,
+        "Training Time (seconds)":      round(feat_time + train_time, 2),
+        "Inference Time per Image (ms)": round(infer_ms, 4),
+        "n_train":                      int(len(y_train)),
+        "n_val":                        int(len(y_val)),
+        "n_test":                       int(len(y_test)),
     }
-    out_path = save_dir / f"classical_ml_{clf_type}.json"
+    out_path = save_dir / f"classical_ml_{clf_type}_{backbone}.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
-    print(f"\n{'='*40}")
-    print(f"  Classical ML Results ({clf.__class__.__name__})")
-    print(f"{'='*40}")
-    print(f"  Val  accuracy : {val_acc:.4f}")
-    print(f"  Test accuracy : {test_acc:.4f}")
-    print(f"  Feature extraction time : {feat_time:.1f}s")
-    print(f"  Classifier train time   : {train_time:.1f}s")
-    print(f"  Train/Val/Test samples   : {len(y_train)}/{len(y_val)}/{len(y_test)}")
-    print(f"{'='*40}")
     print(f"Saved results → {out_path}")
     return results
