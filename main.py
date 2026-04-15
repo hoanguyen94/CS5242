@@ -70,15 +70,21 @@ def parse_args():
     p.add_argument("--img_size",    type=int,   default=32)
     p.add_argument("--use_aug",     action="store_true")
 
+
     # Backbone
     p.add_argument("--backbone",    default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1"])
+                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1", \
+                            "resnet18_scratch", "convnext_tiny_scratch", "ournet"])
 
     # Training
     p.add_argument("--batch_size",  type=int,   default=128)
     p.add_argument("--epochs",      type=int,   default=5)
     p.add_argument("--lr",          type=float, default=1e-4)
-
+    p.add_argument("--lr_scheduler", default="none", choices=["cosine", "step", "none"],
+                   help="Learning rate scheduler type.")
+    p.add_argument("--warmup_epochs", type=int, default=1,
+                   help="Number of epochs for linear learning rate warmup.")
+    
     # Approach 2: freeze policy
     p.add_argument("--freeze_policy", default="backbone",
                    choices=["backbone", "last_stage", "none"])
@@ -91,6 +97,7 @@ def parse_args():
     p.add_argument("--tsne_split",  default="validation",
                    choices=["train", "validation", "test"])
     p.add_argument("--tsne_n",      type=int, default=2000)
+
 
     return p.parse_args()
 
