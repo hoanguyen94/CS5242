@@ -15,6 +15,7 @@ import json
 import time
 from pathlib import Path
 
+import joblib
 import numpy as np
 import torch
 from sklearn.linear_model import LogisticRegression
@@ -120,6 +121,16 @@ def classical_ml_experiment(
             model(dummy)
     infer_ms = (time.time() - t_inf_start) / n_runs * 1000
 
+    # Save classifier weights (sklearn model)
+    clf_path = save_dir / f"classical_ml_{clf_type}_{backbone}_{img_size}px_clf.pkl"
+    joblib.dump(clf, clf_path)
+    print(f"Saved classifier → {clf_path}")
+
+    # Save backbone weights
+    backbone_path = save_dir / f"classical_ml_{clf_type}_{backbone}_{img_size}px_backbone.pt"
+    torch.save(model.state_dict(), backbone_path)
+    print(f"Saved backbone   → {backbone_path}")
+
     results = {
         "approach":                     "classical_ml",
         "classifier":                   clf.__class__.__name__,
@@ -134,9 +145,11 @@ def classical_ml_experiment(
         "n_train":                      int(len(y_train)),
         "n_val":                        int(len(y_val)),
         "n_test":                       int(len(y_test)),
+        "clf_path":                     str(clf_path),
+        "backbone_path":                str(backbone_path),
     }
     out_path = save_dir / f"classical_ml_{clf_type}_{backbone}.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
-    print(f"Saved results → {out_path}")
+    print(f"Saved results    → {out_path}")
     return results
