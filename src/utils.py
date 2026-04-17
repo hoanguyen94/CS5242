@@ -4,11 +4,15 @@ utils.py — Shared utilities: reproducibility, device selection,
 """
 
 import random
+import warnings
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image
+
+warnings.filterwarnings("ignore", message="Corrupt EXIF data")
+warnings.filterwarnings("ignore", message="'pin_memory' argument is set as true but not supported on MPS")
 
 
 # ──────────────────────────────────────────────
@@ -63,16 +67,17 @@ def make_loaders(ds, train_tf, eval_tf, batch_size: int = 128, num_workers: int 
     val_ds = HFDatasetWrapper(ds["validation"], eval_tf)
     test_ds = HFDatasetWrapper(ds["test"], eval_tf)
 
+    pin = torch.cuda.is_available()
     train_loader = torch.utils.data.DataLoader(
         train_ds, batch_size=batch_size, shuffle=True,
-        num_workers=num_workers, pin_memory=True
+        num_workers=num_workers, pin_memory=pin
     )
     val_loader = torch.utils.data.DataLoader(
         val_ds, batch_size=batch_size, shuffle=False,
-        num_workers=num_workers, pin_memory=True
+        num_workers=num_workers, pin_memory=pin
     )
     test_loader = torch.utils.data.DataLoader(
         test_ds, batch_size=batch_size, shuffle=False,
-        num_workers=num_workers, pin_memory=True
+        num_workers=num_workers, pin_memory=pin
     )
     return train_loader, val_loader, test_loader
