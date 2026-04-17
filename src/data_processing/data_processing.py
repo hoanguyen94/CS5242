@@ -1,4 +1,5 @@
 import json
+from pyexpat import features
 import random
 from typing import Dict, Optional, Tuple
 
@@ -36,7 +37,12 @@ def load_mini_imagenet(subset=None, cache_path=None):
     return ds
 
 
-def class_names_from_ds(ds_split):
+def class_names_from_ds(ds_split, path="map_clsloc.txt"):
+    if path and os.path.exists(path):
+        with open(path, "r") as f:
+            metadata = [d.split() for d in f.readlines()]
+        id_to_name = {id_: name for id_, imageNetID, name in metadata}
+        return [id_to_name[i] for i in ds_split.features["label"].names]
     return ds_split.features["label"].names
 
 
