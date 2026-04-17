@@ -232,6 +232,7 @@ def make_transforms(
 
     # For "before vs after" visualisation — no normalization
     tensor_only = transforms.Compose([
+        transforms.RandomResizedCrop(img_size, scale=(0.8, 1.0)),
         transforms.ToTensor(),
     ])
     return train_tf, eval_tf, tensor_only
