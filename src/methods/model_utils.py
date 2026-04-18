@@ -311,10 +311,9 @@ class ourblock_inception(nn.Module):
 
     def forward(self, x):
         input = x
-        x1 = self.dwconv(x)
-        x2 = self.dwconv(x)
-        x3 = self.dwconv(x)
-        x_mp = self.mp(x)
+        x1 = self.dwconv1(x)
+        x2 = self.dwconv2(x)
+        x3 = self.dwconv3(x)
         x = self.conv1(torch.concat([x1, x2, x3, x], dim=1))
 
         x = x.permute(0, 2, 3, 1) # (N, C, H, W) -> (N, H, W, C)
