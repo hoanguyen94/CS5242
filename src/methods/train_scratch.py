@@ -39,10 +39,11 @@ def train_from_scratch(
     epochs: int = 5,
     batch_size: int = 128,
     lr: float = 1e-4,
-    lr_scheduler: str = "cosine",
+    lr_scheduler: str = "None",
     warmup_epochs: int = 1,
     # sanity_check is handled by the caller, no need to pass it here
     save_dir: Path = Path("./outputs"),
+    patience: int = 10,
 ) -> tuple:
     """
     Train a ConvNeXt-Tiny from random initialisation (no pretrained weights).
@@ -106,7 +107,7 @@ def train_from_scratch(
     best_val = 0.0
     t0_total = time.time()
     epochs_no_improve = 0
-    
+
     for epoch in range(1, epochs + 1):
         # --- LR Warmup ---
         if epoch <= warmup_epochs:
@@ -207,12 +208,26 @@ def train_from_scratch(
     test_acc, test_loss = evaluate(model, test_loader, device)
     results["test_acc"]  = test_acc
     results["test_loss"] = test_loss
-    results["representation_snapshots"] = representation_snapshots
-
 
     out_path = save_dir / f"results_{tag}.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
+
+    print(f"\n{'='*40}")
+    print(f"  Fine-tuning Results ({tag})")
+    print(f"{'='*40}")
+    print(f"  Best val accuracy  : {best_val:.4f}")
+    print(f"  Test accuracy      : {test_acc:.4f}")
+    print(f"  Test loss          : {test_loss:.4f}")
+    print(f"  Epochs trained     : {epoch}/{epochs}")
+    print(f"  Total train time   : {results['total_train_time_sec']:.1f}s")
+    # print(f"  Params (total)     : {total/1e6:.2f}M")
+    # print(f"  Params (trainable) : {trainable/1e6:.2f}M")
+    print(f"  Inference/image    : {results['inference_time_per_image_ms']:.2f}ms")
+    if results["peak_gpu_mem_mb"]:
+        print(f"  Peak GPU memory    : {results['peak_gpu_mem_mb']:.0f}MB")
+    print(f"{'='*40}")
+    print(f"Saved results → {out_path}")
     print(f"Saved training results & checkpoint to: {save_dir}")
     return results, ckpt_path
 

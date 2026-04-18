@@ -8,3 +8,4 @@
 .venv/
 data/
 experiments/
+run_experiments.sh
