@@ -258,7 +258,104 @@ class ournet(nn.Module):
         self.stages = nn.ModuleList()
         for i in range(4):
             stage = nn.Sequential(
-                *[ourblock(dim=dims[i]) for j in range(depths[i])]
+                *[ConvNeXtBlock(dim=dims[i]) for j in range(depths[i])]
+            )
+            self.stages.append(stage)
+
+        self.norm = nn.LayerNorm(dims[-1], eps=1e-6) # final norm layer
+        self.head = nn.Linear(dims[-1], num_classes)
+
+    def forward_features(self, x):
+        for i in range(4):
+            x = self.downsample_layers[i](x)
+            x = self.stages[i](x)
+        return self.norm(x.mean([-2, -1])) # global average pooling, (N, C, H, W) -> (N, C)
+
+    def forward(self, x):
+        x = self.forward_features(x)
+        x = self.head(x)
+        return x
+
+
+
+
+
+class ourblock_inception(nn.Module):
+    """ ConvNeXt Block.
+    Args:
+        dim (int): Number of input channels.
+        layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
+    """
+    def __init__(self, dim, layer_scale_init_value=1e-6):
+        super().__init__()
+        self.dwcon1 = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
+        self.dwcon2 = nn.Conv2d(dim, dim, kernel_size=5, padding=2, groups=dim) # depthwise conv
+        self.dwcon3 = nn.Conv2d(dim, dim, kernel_size=3, padding=1, groups=dim) # depthwise conv
+        # self.mp = nn.MaxPool2d(kernel_size=3, pading=2, stride=1) # S = (s- k + 2p)/stride +1
+        self.conv1 = nn.Conv2d(dim*4, dim, kernel_size=1, padding=0) # pointwise/1x1 convs
+        # self.dwconv = nn.Conv2d(
+        #     dim, 
+        #     dim, 
+        #     kernel_size=3, 
+        #     padding=3,      # needed to preserve spatial size
+        #     dilation=3, 
+        #     groups=dim      # still depthwise
+        # )
+
+        self.norm = LayerNorm(dim, eps=1e-6)
+        self.pwconv1 = nn.Linear(dim, 4 * dim) # pointwise/1x1 convs, implemented with linear layers
+        self.act = nn.GELU()
+        self.pwconv2 = nn.Linear(4 * dim, dim)
+        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((dim)),
+                                    requires_grad=True) if layer_scale_init_value > 0 else None
+
+    def forward(self, x):
+        input = x
+        x1 = self.dwconv(x)
+        x2 = self.dwconv(x)
+        x3 = self.dwconv(x)
+        x_mp = self.mp(x)
+        x = self.conv1(torch.concat([x1, x2, x3, x], dim=1))
+
+        x = x.permute(0, 2, 3, 1) # (N, C, H, W) -> (N, H, W, C)
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.pwconv2(x)
+        if self.gamma is not None:
+            x = self.gamma * x
+        x = x.permute(0, 3, 1, 2) # (N, H, W, C) -> (N, C, H, W)
+
+        x = input + x
+        return x
+
+class ournetv2(nn.Module):
+    """ ConvNeXt
+        A PyTorch impl of : `A ConvNet for the 2020s`  - https://arxiv.org/pdf/2201.03545.pdf
+    """
+    def __init__(self, in_chans=3, num_classes=100,
+                 depths=[3, 3, 9, 3], dims=[96, 192, 384, 768]):
+        super().__init__()
+
+        self.downsample_layers = nn.ModuleList()
+        stem = nn.Sequential(
+            nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
+            LayerNorm(dims[0], eps=1e-6, data_format="channels_first")
+        )
+        self.downsample_layers.append(stem)
+        for i in range(3):
+            downsample_layer = nn.Sequential(
+                    # LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
+                    # nn.Conv2d(dims[i], dims[i+1], kernel_size=2, stride=2),
+                    nn.Conv2d(dims[i], dims[i+1], kernel_size=1),
+                    nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+            )
+            self.downsample_layers.append(downsample_layer)
+
+        self.stages = nn.ModuleList()
+        for i in range(4):
+            stage = nn.Sequential(
+                *[ourblock_inception(dim=dims[i]) for j in range(depths[i])]
             )
             self.stages.append(stage)
 

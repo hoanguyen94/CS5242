@@ -219,7 +219,7 @@ def _parse_args():
     p.add_argument("--sanity_check", action="store_true",
                    help="Run a quick profiling sanity check on a random tensor and exit.")
     p.add_argument("--backbone",   default="convnext_tiny",
-                   choices=["convnext_tiny", "resnet18", "resnet34", "resnet50", "efficientnet_b0", "efficientnet_b1", "resnet18_scratch", "convnext_tiny_scratch", "ournet"])
+                   choices=["resnet18_scratch", "convnext_tiny_scratch", "ournet", "ournetv2"])
     p.add_argument("--use_aug",    action="store_true")
     p.add_argument("--seed",       type=int,   default=42)
     p.add_argument("--use_gpu",    action="store_true")
