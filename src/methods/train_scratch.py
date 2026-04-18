@@ -105,7 +105,8 @@ def train_from_scratch(
 
     best_val = 0.0
     t0_total = time.time()
-
+    epochs_no_improve = 0
+    
     for epoch in range(1, epochs + 1):
         # --- LR Warmup ---
         if epoch <= warmup_epochs:
@@ -166,6 +167,20 @@ def train_from_scratch(
             f"time={epoch_time:.1f}s"
         )
         results["epoch_logs"].append(log)
+        # Capture representation snapshot at first, middle, and last epochs
+
+        if val_acc > best_val:
+            best_val = val_acc
+            epochs_no_improve = 0
+            torch.save(model.state_dict(), ckpt_path)
+        else:
+            epochs_no_improve += 1
+        
+
+        if epochs_no_improve >= patience:
+            print(f"Early stopping at epoch {epoch} (no val improvement for {patience} epochs)")
+            break
+
 
     results["total_train_time_sec"] = time.time() - t0_total
 
@@ -192,6 +207,7 @@ def train_from_scratch(
     test_acc, test_loss = evaluate(model, test_loader, device)
     results["test_acc"]  = test_acc
     results["test_loss"] = test_loss
+    results["representation_snapshots"] = representation_snapshots
 
 
     out_path = save_dir / f"results_{tag}.json"
