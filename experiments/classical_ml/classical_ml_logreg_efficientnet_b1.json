@@ -1,0 +1,17 @@
+{
+  "approach": "classical_ml",
+  "classifier": "LogisticRegression",
+  "backbone": "efficientnet_b1",
+  "Image Size": 32,
+  "Number of parameters (mil)": 6.64,
+  "val_acc": 0.2193,
+  "Test accuracy (%)": 20.88,
+  "Test loss (Cross Entropy)": 3.570811242887069,
+  "Training Time (seconds)": 1864.15,
+  "Inference Time per Image (ms)": 14.1384,
+  "n_train": 50000,
+  "n_val": 10000,
+  "n_test": 5000,
+  "clf_path": "experiments/classical_ml/classical_ml_logreg_efficientnet_b1_32px_clf.pkl",
+  "backbone_path": "experiments/classical_ml/classical_ml_logreg_efficientnet_b1_32px_backbone.pt"
+}

@@ -1,0 +1,17 @@
+{
+  "approach": "classical_ml",
+  "classifier": "LinearSVC",
+  "backbone": "convnext_tiny",
+  "Image Size": 224,
+  "Number of parameters (mil)": 27.9,
+  "val_acc": 0.9835,
+  "Test accuracy (%)": 93.9,
+  "Test loss (Cross Entropy)": null,
+  "Training Time (seconds)": 646.87,
+  "Inference Time per Image (ms)": 6.3815,
+  "n_train": 50000,
+  "n_val": 10000,
+  "n_test": 5000,
+  "clf_path": "experiments/classical_ml/classical_ml_linear_svm_convnext_tiny_224px_clf.pkl",
+  "backbone_path": "experiments/classical_ml/classical_ml_linear_svm_convnext_tiny_224px_backbone.pt"
+}
