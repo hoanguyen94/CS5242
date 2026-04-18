@@ -288,9 +288,9 @@ class ourblock_inception(nn.Module):
     """
     def __init__(self, dim, layer_scale_init_value=1e-6):
         super().__init__()
-        self.dwcon1 = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
-        self.dwcon2 = nn.Conv2d(dim, dim, kernel_size=5, padding=2, groups=dim) # depthwise conv
-        self.dwcon3 = nn.Conv2d(dim, dim, kernel_size=3, padding=1, groups=dim) # depthwise conv
+        self.dwconv1 = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
+        self.dwconv2 = nn.Conv2d(dim, dim, kernel_size=5, padding=2, groups=dim) # depthwise conv
+        self.dwconv3 = nn.Conv2d(dim, dim, kernel_size=3, padding=1, groups=dim) # depthwise conv
         # self.mp = nn.MaxPool2d(kernel_size=3, pading=2, stride=1) # S = (s- k + 2p)/stride +1
         self.conv1 = nn.Conv2d(dim*4, dim, kernel_size=1, padding=0) # pointwise/1x1 convs
         # self.dwconv = nn.Conv2d(
