@@ -183,7 +183,7 @@ def train_finetune(
         pretrained=use_pretrained,
         device=device,
     )
-    print("Model parameters: ", model)
+    # print("Model parameters: ", model)
     
     if freeze_policy == "lora":
         apply_lora(model, rank=lora_rank, alpha=lora_alpha)
@@ -293,7 +293,7 @@ def train_finetune(
         results["epoch_logs"].append(log)
 
         # Capture representation snapshot at first, middle, and last epochs
-        if epoch == 1 or epoch == max(1, epochs // 20) or epoch == epochs or epochs_no_improve >= patience:
+        if epoch == 1 or epoch == max(1, epochs // 15) or epoch == epochs or epochs_no_improve >= patience:
             feats, labels = extract_features_for_vis(model, val_loader, device)
             # Avoid duplicate snapshots for the same epoch
             if not representation_snapshots or representation_snapshots[-1]["epoch"] != epoch:
