@@ -79,7 +79,7 @@ def train_from_scratch(
     print(f"Model: {backbone} | Params: {params_millions:.2f}M")
 
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.05)
     ce = nn.CrossEntropyLoss()
 
     # Create LR scheduler
