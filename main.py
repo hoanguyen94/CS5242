@@ -222,6 +222,7 @@ def main():
             train_from_scratch(
                 ds=ds, train_tf=train_tf, eval_tf=eval_tf, device=device,
                 backbone=args.backbone,
+                lr_scheduler=args.lr_scheduler, warmup_epochs=args.warmup_epochs,
                 epochs=args.epochs, batch_size=args.batch_size,
                 lr=args.lr, save_dir=save_dir,
             )

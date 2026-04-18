@@ -183,7 +183,7 @@ def train_finetune(
         pretrained=use_pretrained,
         device=device,
     )
-    print("Model parameters: ", model)
+    # print("Model parameters: ", model)
     
     if freeze_policy == "lora":
         apply_lora(model, rank=lora_rank, alpha=lora_alpha)

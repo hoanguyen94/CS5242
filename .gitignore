@@ -9,3 +9,4 @@
 data/
 # experiments/
 *.pkl
+run_experiments.sh
