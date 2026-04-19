@@ -148,7 +148,7 @@ def classical_ml_experiment(
         "clf_path":                     str(clf_path),
         "backbone_path":                str(backbone_path),
     }
-    out_path = save_dir / f"classical_ml_{clf_type}_{backbone}.json"
+    out_path = save_dir / f"classical_ml_{clf_type}_{backbone}_{img_size}px.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"Saved results    → {out_path}")

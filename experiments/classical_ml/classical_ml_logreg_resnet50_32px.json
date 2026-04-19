@@ -1,0 +1,17 @@
+{
+  "approach": "classical_ml",
+  "classifier": "LogisticRegression",
+  "backbone": "resnet50",
+  "Image Size": 32,
+  "Number of parameters (mil)": 23.71,
+  "val_acc": 0.3385,
+  "Test accuracy (%)": 33.22,
+  "Test loss (Cross Entropy)": 8.27834259030185,
+  "Training Time (seconds)": 679.56,
+  "Inference Time per Image (ms)": 6.4747,
+  "n_train": 50000,
+  "n_val": 10000,
+  "n_test": 5000,
+  "clf_path": "experiments/classical_ml/classical_ml_logreg_resnet50_32px_clf.pkl",
+  "backbone_path": "experiments/classical_ml/classical_ml_logreg_resnet50_32px_backbone.pt"
+}
