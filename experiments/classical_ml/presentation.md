@@ -122,7 +122,6 @@ Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector 
 | ResNet-34 | ResNet | 21.3M | 512 | Deeper basic blocks |
 | ResNet-50 | ResNet | 23.7M | 2048 | Bottleneck blocks |
 | EfficientNet-b0 | EfficientNet (2019) | 4.1M | 1280 | MBConv + SE + compound scaling |
-| EfficientNet-b1 | EfficientNet | 6.6M | 1280 | Deeper/wider compound scaling |
 
 ### Experiment Grid
 - **32×32**: All backbones × {SVM, LogReg}
@@ -139,7 +138,6 @@ Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector 
 | ResNet-34 | 33.08% | 33.16% | LogReg (+0.08pp) |
 | ResNet-50 | 27.34% | 33.22% | LogReg (+5.88pp) |
 | EfficientNet-b0 | 23.88% | 24.72% | LogReg (+0.84pp) |
-| EfficientNet-b1 | — | 20.64% | — |
 
 > **ConvNeXt-Tiny leads by 10+ pp** across both classifiers.
 > LogReg ≥ SVM for all backbones at 32×32 — noisy features favour probabilistic calibration over max-margin.
@@ -163,7 +161,7 @@ $$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
 | ResNet-18 | LogReg | 32.46% | 3.09 ms | 11.2M | 347s |
 | ResNet-18 | SVM | 32.52% | **2.89 ms** | **11.2M** | 465s |
 
-> **LogReg trains 2–9× faster** than SVM with equal or better accuracy.
+> **LogReg trains 1.2–9× faster** than SVM with equal or better accuracy.
 > ResNet-18 has the **fastest inference** (≈2.9 ms/image).
 
 ---
@@ -174,7 +172,7 @@ $$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
 
 - **ResNets cluster** at 32–33% regardless of depth → resolution-limited, not capacity-limited
 - **ConvNeXt-Tiny** leads by 10+ pp — patchify stem + 7×7 DW-Conv preserve spatial structure
-- **EfficientNets collapse** — compound scaling breaks at 7× below design resolution
+- **EfficientNet-b0 collapses** — compound scaling breaks at 7× below design resolution
 
 ---
 
@@ -246,11 +244,11 @@ Based on these results, we select **two backbones** for Section 3 (fine-tuning):
 
 2. **Resolution is critical** — 224→32 causes catastrophic ≈50 pp loss for all frozen backbones
 
-3. **LogReg ≥ SVM at 32×32** — noisy features favour probabilistic calibration; LogReg also trains 2–9× faster
+3. **LogReg ≥ SVM at 32×32** — noisy features favour probabilistic calibration; LogReg also trains 1.2–9× faster
 
 4. **Architecture > Depth** — ResNet-18/34/50 cluster within 1 pp; design innovations (ConvNeXt) matter far more
 
-5. **EfficientNets fail at low resolution** — compound scaling breaks down at 7× below design resolution
+5. **EfficientNet-b0 fails at low resolution** — compound scaling breaks down at 7× below design resolution
 
 6. **Strong generalisation** — val-test gap < 3 pp across all configs (linear models + frozen features = implicit regularisation)
 
