@@ -43,6 +43,16 @@ style: |
     display: block;
     margin: 0 auto;
   }
+  .footnote {
+    position: absolute;
+    bottom: 1.2em;
+    left: 2em;
+    right: 2em;
+    font-size: 14px;
+    color: #666;
+    border-top: 1px solid #ccc;
+    padding-top: 0.3em;
+  }
 ---
 
 # Traditional ML on Mini-ImageNet
@@ -58,10 +68,10 @@ style: |
 2. **Approach: Frozen Backbone + Classical Classifier**
 3. **Experimental Design**
 4. **Results: Backbone & Classifier Comparison (32×32)**
-5. **Results: Resolution Impact (224×224 vs 32×32)**
-6. **t-SNE Feature Visualisation**
-7. **Key Findings & Backbone Downselection**
-8. **Conclusion & Next Steps**
+5. **Results: Efficiency, NetScore & Training Time**
+6. **Results: Resolution Impact (224×224 vs 32×32)**
+7. **t-SNE Feature Visualisation & Generalisation Gap**
+8. **Key Findings, Backbone Downselection & Next Steps**
 
 ---
 
@@ -117,15 +127,17 @@ Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector 
 
 | Backbone | Family | Params | Feature Dim | Key Innovation |
 |---|---|---|---|---|
-| ConvNeXt-Tiny | ConvNeXt (2022) | 27.9M | 768 | 7×7 DW-Conv, LayerNorm, GELU |
-| ResNet-18 | ResNet (2015) | 11.2M | 512 | Basic residual blocks |
-| ResNet-34 | ResNet | 21.3M | 512 | Deeper basic blocks |
-| ResNet-50 | ResNet | 23.7M | 2048 | Bottleneck blocks |
-| EfficientNet-b0 | EfficientNet (2019) | 4.1M | 1280 | MBConv + SE + compound scaling |
+| ConvNeXt-Tiny | ConvNeXt [2] | 27.9M | 768 | 7×7 DW-Conv, LayerNorm, GELU |
+| ResNet-18 | ResNet [1] | 11.2M | 512 | Basic residual blocks |
+| ResNet-34 | ResNet [1] | 21.3M | 512 | Deeper basic blocks |
+| ResNet-50 | ResNet [1] | 23.7M | 2048 | Bottleneck blocks |
+| EfficientNet-b0 | EfficientNet [3] | 4.1M | 1280 | MBConv + SE + compound scaling |
 
 ### Experiment Grid
 - **32×32**: All backbones × {SVM, LogReg}
 - **224×224**: ConvNeXt-Tiny & ResNet-18 × SVM (downselected)
+
+<div class="footnote">[1] He et al., CVPR 2016 &nbsp; [2] Liu et al., CVPR 2022 &nbsp; [3] Tan & Le, ICML 2019</div>
 
 ---
 
@@ -140,7 +152,7 @@ Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector 
 | EfficientNet-b0 | 23.88% | 24.72% | LogReg (+0.84pp) |
 
 > **ConvNeXt-Tiny leads by 10+ pp** across both classifiers.
-> LogReg ≥ SVM for all backbones at 32×32 — noisy features favour probabilistic calibration over max-margin.
+> LogReg matches or beats SVM for 4 of 5 backbones at 32×32 — noisy features favour probabilistic calibration over max-margin.
 
 ---
 
@@ -190,23 +202,80 @@ At 32×32, extracted features are **noisy and less linearly separable**. This sh
 
 # Results: NetScore, Accuracy, Inference & Parameters
 
-![w:1100](analysis_netscore_combined.png)
+![w:1000](analysis_netscore_combined.png)
+
+> **Key observation:** ConvNeXt-Tiny leads on **accuracy** (44.16%) despite having the most parameters, while ResNet-18 leads on **NetScore** (45.4) due to its small size and fast inference. EfficientNet-b0 is both the slowest and least accurate.
 
 ---
 
-# Results: NetScore & Efficiency (32×32)
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 18px; }
+table { font-size: 15px; }
+h1 { font-size: 30px; }
+h3 { font-size: 20px; }
+</style>
+
+# Results: Efficiency Comparison (32×32)
+
+<div class="columns">
+<div>
 
 $$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
 
-| Backbone | Classifier | Test Acc | Infer. Time | Params | Train Time |
-|---|---|---|---|---|---|
-| ConvNeXt-Tiny | LogReg | **44.16%** | 5.92 ms | 27.9M | **278s** |
-| ConvNeXt-Tiny | SVM | 43.28% | 5.96 ms | 27.9M | 1502s |
-| ResNet-18 | LogReg | 32.46% | 3.09 ms | 11.2M | 347s |
-| ResNet-18 | SVM | 32.52% | **2.89 ms** | **11.2M** | 465s |
+| Backbone | Clf | Acc | Infer | NS |
+|---|---|---|---|---|
+| ResNet-18 | SVM | 32.52 | **2.89** | **45.4** |
+| ResNet-18 | LR | 32.46 | 3.09 | 45.1 |
+| ConvNeXt | LR | **44.16** | 5.92 | 43.6 |
+| ConvNeXt | SVM | 43.28 | 5.96 | 43.2 |
+| ResNet-34 | LR | 33.16 | 5.17 | 40.4 |
+| ResNet-34 | SVM | 33.08 | 5.49 | 40.1 |
+| EffNet-b0 | LR | 24.72 | 9.66 | 39.7 |
+| EffNet-b0 | SVM | 23.88 | 9.51 | 39.2 |
+| ResNet-50 | LR | 33.22 | 6.47 | 39.0 |
+| ResNet-50 | SVM | 27.34 | 6.51 | 35.6 |
 
-> **LogReg trains 1.2–9× faster** than SVM with equal or better accuracy.
-> ResNet-18 has the **fastest inference** (≈2.9 ms/image).
+</div>
+<div>
+
+### Key Observations
+
+- **ResNet-18 SVM tops NetScore** (45.4) — smallest model (11.2M) + fastest inference (2.89 ms) offsets lower accuracy
+
+- **ConvNeXt-Tiny LogReg** leads on raw accuracy (44.16%) but 27.9M params penalise its NetScore
+
+- **Classifier choice barely affects NetScore** — SVM vs LogReg differ by <0.5 for same backbone, since inference time is backbone-dominated
+
+- **EfficientNet-b0** has poor NetScore despite fewest params (4.1M) — slowest inference (9.5 ms) + lowest accuracy (24%)
+
+</div>
+</div>
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 17px; }
+table { font-size: 15px; }
+h1 { font-size: 28px; }
+</style>
+
+# Training Time: LogReg vs SVM (32×32)
+
+| Backbone | Feat Dim | SVM (s) | LogReg (s) | Speedup |
+|---|---|---|---|---|
+| ConvNeXt-Tiny | 768 | 1502 | **278** | **5.4×** |
+| ResNet-18 | 512 | 465 | **347** | 1.3× |
+| ResNet-34 | 512 | 634 | **527** | 1.2× |
+| ResNet-50 | 2048 | 3153 | **680** | 4.6× |
+| EfficientNet-b0 | 1280 | 4147 | **454** | **9.1×** |
+
+> **LogReg trains 1.2–9× faster** across all backbones.
+
+**Across classifiers:** SVM uses dual coordinate descent (100 OvR binary QPs) while LogReg uses LBFGS to optimise all 100 classes jointly on a smooth cross-entropy objective.
+
+**Across backbones:** Training time depends on feature dimensionality **and** feature quality. LogReg generally scales with dimension — 512-d ResNets (347–527s), 1280-d EffNet (454s), 2048-d ResNet-50 (680s) — though ConvNeXt-Tiny (768-d, 278s) is an outlier, converging faster thanks to its better-separated features. SVM is more sensitive — EfficientNet-b0 (1280-d, 4147s) is slower than ResNet-50 (2048-d, 3153s) despite smaller features, because EffNet's near-random features (23.88% acc) create massive class overlap where nearly every sample becomes a support vector, inflating the QP solver's active constraint set.
 
 ---
 
@@ -222,7 +291,7 @@ $$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
 
 # Why EfficientNet-b0 Fails at 32×32
 
-EfficientNet's **compound scaling** (Tan & Le, 2019) jointly optimises three axes:
+EfficientNet's **compound scaling** [3] jointly optimises three axes:
 
 $$\text{depth: } d = \alpha^\phi, \quad \text{width: } w = \beta^\phi, \quad \text{resolution: } r = \gamma^\phi$$
 
@@ -233,6 +302,8 @@ The architecture is **designed for 224×224** ($r = 1.0$). At 32×32 ($r \approx
 3. **Depth/width are over-scaled for the resolution** — the network has more capacity than the spatial information can support, leading to redundant or contradictory features
 
 > EfficientNet achieves SOTA by balancing all three axes. Collapsing resolution to 14% of design while keeping depth/width fixed **violates the core design principle**.
+
+<div class="footnote">[3] M. Tan and Q. V. Le, "EfficientNet: Rethinking model scaling for CNNs," ICML 2019.</div>
 
 ---
 
@@ -261,10 +332,11 @@ The uniform ~50 pp drop across both architectures reveals a **shared bottleneck*
 
 # t-SNE Feature Visualisation
 
-![w:680](downselected_backbones_tsne.png)
+![w:550](downselected_backbones_tsne.png)
 
-- **224×224:** ConvNeXt-Tiny → tight clusters (93.88%); ResNet-18 → moderately separated (83.24%)
-- **32×32:** ConvNeXt-Tiny retains partial structure; ResNet-18 → near-random scattering
+- **224×224:** Tight, well-separated clusters — classes are linearly separable in feature space, enabling high accuracy (ConvNeXt: 93.88%, ResNet-18: 83.24%)
+- **32×32:** Clusters collapse and overlap heavily — classes become entangled, forcing classifiers to draw boundaries through mixed regions, which explains the ~50 pp accuracy drop
+- **ConvNeXt-Tiny** retains more inter-class separation than ResNet-18 at both resolutions, consistent with its 10+ pp accuracy advantage
 
 ---
 
@@ -318,7 +390,7 @@ Based on these results, we select **two backbones** for Section 3 (fine-tuning):
 
 2. **Resolution is critical** — 224→32 causes catastrophic ≈50 pp loss for all frozen backbones
 
-3. **LogReg ≥ SVM at 32×32** — noisy features favour probabilistic calibration; LogReg also trains 1.2–9× faster
+3. **LogReg matches or beats SVM at 32×32** — noisy features favour probabilistic calibration (4 of 5 backbones); LogReg also trains 1.2–9× faster
 
 4. **Architecture > Depth** — ResNet-18/34/50 cluster within 1 pp; design innovations (ConvNeXt) matter far more
 
@@ -338,6 +410,16 @@ With ConvNeXt-Tiny and ResNet-18 as our downselected backbones, we will explore:
 - **LoRA** → low-rank adaptation of backbone weights
 
 **Goal:** Determine how much task-specific adaptation can improve over frozen feature extraction, and whether ConvNeXt-Tiny's architectural advantage persists after fine-tuning.
+
+---
+
+# References
+
+[1] K. He, X. Zhang, S. Ren, and J. Sun, "Deep residual learning for image recognition," in *Proc. IEEE CVPR*, 2016, pp. 770–778.
+
+[2] Z. Liu, H. Mao, C.-Y. Wu, C. Feichtenhofer, T. Darrell, and S. Xie, "A ConvNet for the 2020s," in *Proc. IEEE/CVF CVPR*, 2022, pp. 11976–11986.
+
+[3] M. Tan and Q. V. Le, "EfficientNet: Rethinking model scaling for convolutional neural networks," in *Proc. ICML*, 2019, pp. 6105–6114.
 
 ---
 
