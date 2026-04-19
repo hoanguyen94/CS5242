@@ -144,6 +144,50 @@ Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector 
 
 ---
 
+# Why ConvNeXt-Tiny Dominates at 32×32
+
+The key lies in how each architecture's **stem** processes low-resolution input:
+
+<div class="columns">
+<div>
+
+### ConvNeXt-Tiny Stem
+- **4×4 stride-4 patchify** convolution
+- 32×32 input → **8×8 feature map** after stem
+- Subsequent **7×7 depthwise kernels** still have meaningful spatial extent to work with
+- LayerNorm stabilises activations; GELU preserves gradient flow
+
+</div>
+<div>
+
+### ResNet Stem
+- **7×7 stride-2** conv + **3×3 stride-2** max-pool
+- 32×32 input → **8×8** after stem, then quickly **1×1** through residual stages
+- Deeper layers receive **spatially degenerate** feature maps — no local structure to exploit
+- BatchNorm statistics are calibrated for 224×224 distributions
+
+</div>
+</div>
+
+> ConvNeXt's patchify stem is resolution-adaptive: it reduces spatial dims in one step without the cascading downsampling that collapses small inputs in ResNets.
+
+---
+
+# Why LogReg Outperforms SVM at 32×32
+
+At 32×32, extracted features are **noisy and less linearly separable**. This shifts the advantage from margin-based to probabilistic classifiers:
+
+| Property | SVM (hinge loss) | LogReg (cross-entropy) |
+|---|---|---|
+| **Objective** | Maximise geometric margin | Minimise calibrated log-likelihood |
+| **Noise handling** | Margin amplifies noisy support vectors | Probabilistic weighting downweights ambiguous samples |
+| **High-dim behaviour** | Overfits when signal-to-noise is low | L2 + cross-entropy regularises more gracefully |
+| **Solver scaling** | QP: scales poorly with dim (2048-d → 3153s) | LBFGS: predictable convergence (2048-d → 680s) |
+
+**ResNet-50 is the extreme case:** 2048-d features with heavy noise at 32×32 → SVM drops to 27.34% while LogReg holds at 33.22% (+5.88 pp). The hinge loss concentrates on a small set of support vectors that are themselves noisy, while cross-entropy loss averages over all samples.
+
+---
+
 # Results: NetScore, Accuracy, Inference & Parameters
 
 ![w:1100](analysis_netscore_combined.png)
@@ -176,12 +220,42 @@ $$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
 
 ---
 
+# Why EfficientNet-b0 Fails at 32×32
+
+EfficientNet's **compound scaling** (Tan & Le, 2019) jointly optimises three axes:
+
+$$\text{depth: } d = \alpha^\phi, \quad \text{width: } w = \beta^\phi, \quad \text{resolution: } r = \gamma^\phi$$
+
+The architecture is **designed for 224×224** ($r = 1.0$). At 32×32 ($r \approx 0.14$):
+
+1. **Squeeze-and-Excitation modules fail** — they globally average-pool feature maps to compute channel attention weights. When pre-pooling maps are 1×1 or 2×2, the "squeeze" output is essentially random noise
+2. **MBConv depthwise convolutions underperform** — 3×3 and 5×5 kernels on 1–2 pixel feature maps have no spatial variation to detect
+3. **Depth/width are over-scaled for the resolution** — the network has more capacity than the spatial information can support, leading to redundant or contradictory features
+
+> EfficientNet achieves SOTA by balancing all three axes. Collapsing resolution to 14% of design while keeping depth/width fixed **violates the core design principle**.
+
+---
+
 # Resolution Impact: 224×224 → 32×32
 
 ![w:750](analysis_accuracy_drop.png)
 
 > Both backbones lose ≈**50 pp** — a fundamental resolution floor for frozen pretrained backbones.
 > ConvNeXt-Tiny's 10.6 pp advantage is **preserved** across both resolutions.
+
+---
+
+# Why the ≈50 pp Drop Is Nearly Identical
+
+The uniform ~50 pp drop across both architectures reveals a **shared bottleneck**:
+
+1. **Pretrained filters are calibrated for 224×224** — Gabor-like edge detectors in early layers expect specific spatial frequencies. At 32×32, the Nyquist frequency is 7× lower — fine textures and edges are aliased away before the network even sees them
+
+2. **Receptive field saturation** — at 224×224, a ResNet-18 layer-4 neuron has an effective receptive field of ~100 px (partial image). At 32×32, the same neuron's receptive field covers the **entire image** after just 2 stages, eliminating the hierarchical spatial decomposition that makes CNNs powerful
+
+3. **The gap is preserved (10.6→10.8 pp)** because ConvNeXt's advantage is architectural, not resolution-dependent — its patchify stem, LayerNorm, and wider kernels extract better features at **any** spatial scale
+
+> This suggests ~50 pp is a **hard floor** for frozen ImageNet backbones on 32×32 inputs — task-specific fine-tuning is needed to break through it.
 
 ---
 
