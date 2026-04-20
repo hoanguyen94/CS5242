@@ -7,5 +7,6 @@
 **/dev
 .venv/
 data/
-experiments/
+# experiments/
+*.pt
 run_experiments.sh
