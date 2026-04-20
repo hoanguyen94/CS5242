@@ -8,6 +8,5 @@
 .venv/
 data/
 # experiments/
-*.pkl
 *.pt
 run_experiments.sh
