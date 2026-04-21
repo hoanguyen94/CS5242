@@ -6,6 +6,7 @@
 **.pptx
 **/dev
 .venv/
+.claude/
 data/
 *.pt
 experiments/classical_ml/script.md
