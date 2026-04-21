@@ -7,6 +7,10 @@
 **/dev
 .venv/
 data/
-# experiments/
 *.pt
+experiments/classical_ml/script.md
+experiments/classical_ml/*.html
+experiments/classical_ml/*.pdf
+experiments/classical_ml/presentation.md
+experiments/classical_ml/export_presentation_marp.py
 run_experiments.sh
