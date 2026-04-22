@@ -81,6 +81,9 @@ def parse_args():
                    help="Learning rate scheduler type.")
     p.add_argument("--warmup_epochs", type=int, default=1,
                    help="Number of epochs for linear learning rate warmup.")
+    p.add_argument("--patience", type=int, default=10,
+                help="Apply early stoping")
+                   
     p.add_argument("--sanity_check", action="store_true",
                 help="Run a quick profiling sanity check on a random tensor and exit.")
     # Approach 2: freeze policy
@@ -225,6 +228,7 @@ def main():
                 lr_scheduler=args.lr_scheduler, warmup_epochs=args.warmup_epochs,
                 epochs=args.epochs, batch_size=args.batch_size,
                 lr=args.lr, save_dir=save_dir,
+                patience=args.patience,
             )
 
     elif args.task == "tsne":
