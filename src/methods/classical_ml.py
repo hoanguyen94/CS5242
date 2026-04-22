@@ -23,7 +23,11 @@ from sklearn.svm import LinearSVC
 from sklearn.metrics import accuracy_score, log_loss
 
 from ..utils import ensure_dir, make_loaders
-from ..model import build_backbone, extract_convnext_features
+from ..model import (
+    build_backbone,
+    extract_convnext_features,
+    measure_pytorch_inference_time_ms,
+)
 
 
 def classical_ml_experiment(
@@ -108,18 +112,14 @@ def classical_ml_experiment(
                 img_size = sz if isinstance(sz, int) else sz[0]
                 break
 
-    # Measure per-image inference time (feature extraction only)
-    dummy = torch.randn(1, 3, img_size, img_size).to(device)
-    model.eval()
-    with torch.no_grad():
-        for _ in range(10):          # warm-up
-            model(dummy)
-    n_runs = 100
-    t_inf_start = time.time()
-    with torch.no_grad():
-        for _ in range(n_runs):
-            model(dummy)
-    infer_ms = (time.time() - t_inf_start) / n_runs * 1000
+    # Measure per-image PyTorch backbone inference time (feature extraction only).
+    infer_ms = measure_pytorch_inference_time_ms(
+        model=model,
+        img_size=img_size,
+        device=device,
+        n_warmup=10,
+        n_runs=100,
+    )
 
     # Save classifier weights (sklearn model)
     clf_path = save_dir / f"classical_ml_{clf_type}_{backbone}_{img_size}px_clf.pkl"

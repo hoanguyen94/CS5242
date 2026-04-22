@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 import copy
 import inspect
+import time
 
 import numpy as np
 import torch
@@ -263,6 +264,32 @@ def try_flops(
     model_copy.eval()
     flops, _ = profile(model_copy, inputs=(dummy,), verbose=False)
     return flops / 1e9
+
+
+def measure_pytorch_inference_time_ms(
+    model: nn.Module,
+    img_size: int,
+    device: torch.device,
+    n_warmup: int = 10,
+    n_runs: int = 100,
+) -> float:
+    """Measure single-image PyTorch forward-pass latency in ms/image."""
+    dummy = torch.randn(1, 3, img_size, img_size, device=device)
+    model.eval()
+
+    with torch.no_grad():
+        for _ in range(n_warmup):
+            model(dummy)
+
+        if device.type == "cuda":
+            torch.cuda.synchronize(device=device)
+        t_inf_start = time.time()
+        for _ in range(n_runs):
+            model(dummy)
+        if device.type == "cuda":
+            torch.cuda.synchronize(device=device)
+
+    return (time.time() - t_inf_start) / max(n_runs, 1) * 1000.0
 
 
 # ──────────────────────────────────────────────
