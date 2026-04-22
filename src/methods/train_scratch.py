@@ -115,6 +115,7 @@ def train_from_scratch(
             lr_scale = epoch / warmup_epochs
             for param_group in optimizer.param_groups:
                 param_group['lr'] = lr * lr_scale
+            epochs_no_improve = 0
 
         model.train()
         t_epoch = time.time()
@@ -149,6 +150,15 @@ def train_from_scratch(
                 "best_val_acc": best_val,
             }
             torch.save(checkpoint, ckpt_path)
+        if epoch %10==0:
+            checkpoint = {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "best_val_acc": best_val,
+            }
+            torch.save(checkpoint, save_dir / f"model_epoch{epoch}.pt")
+
 
         current_lr = optimizer.param_groups[0]['lr']
         log = {
@@ -189,6 +199,15 @@ def train_from_scratch(
     checkpoint = torch.load(ckpt_path, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
+    last_checkpoint = torch.load(save_dir / f"model_epoch{epochs}.pt", map_location=device)
+    last_model = build_backbone(
+        backbone=backbone,
+        num_classes=100,
+        pretrained=False,  # Always False for training from scratch
+        device=device,
+    )
+    last_model.load_state_dict(last_checkpoint['model_state_dict'])
+    last_model.eval()
 
     # Inference time on validation set
     n_imgs, t_inf = 0, 0.0
@@ -206,8 +225,14 @@ def train_from_scratch(
 
 
     test_acc, test_loss = evaluate(model, test_loader, device)
+
+    last_test_acc, last_test_loss = evaluate(last_model, test_loader, device)
     results["test_acc"]  = test_acc
     results["test_loss"] = test_loss
+
+    results["test_acc_last_model"]  = last_test_acc
+    results["test_loss_last_model"] = last_test_loss
+
 
     out_path = save_dir / f"results_{tag}.json"
     with open(out_path, "w") as f:
@@ -219,13 +244,15 @@ def train_from_scratch(
     print(f"  Best val accuracy  : {best_val:.4f}")
     print(f"  Test accuracy      : {test_acc:.4f}")
     print(f"  Test loss          : {test_loss:.4f}")
+    print(f"  Test accuracy  (last model) : {last_test_acc:.4f}")
+    print(f"  Test loss  (last model: {last_test_loss:.4f}")
     print(f"  Epochs trained     : {epoch}/{epochs}")
     print(f"  Total train time   : {results['total_train_time_sec']:.1f}s")
     # print(f"  Params (total)     : {total/1e6:.2f}M")
     # print(f"  Params (trainable) : {trainable/1e6:.2f}M")
     print(f"  Inference/image    : {results['inference_time_per_image_ms']:.2f}ms")
-    if results["peak_gpu_mem_mb"]:
-        print(f"  Peak GPU memory    : {results['peak_gpu_mem_mb']:.0f}MB")
+    # if results["peak_gpu_mem_mb"]:
+    #     print(f"  Peak GPU memory    : {results['peak_gpu_mem_mb']:.0f}MB")
     print(f"{'='*40}")
     print(f"Saved results → {out_path}")
     print(f"Saved training results & checkpoint to: {save_dir}")

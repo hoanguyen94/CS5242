@@ -289,10 +289,10 @@ class ourblock_inception(nn.Module):
     def __init__(self, dim, layer_scale_init_value=1e-6):
         super().__init__()
         self.dwconv1 = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim) # depthwise conv
-        self.dwconv2 = nn.Conv2d(dim, dim, kernel_size=5, padding=2, groups=dim) # depthwise conv
+        # self.dwconv2 = nn.Conv2d(dim, dim, kernel_size=5, padding=2, groups=dim) # depthwise conv
         self.dwconv3 = nn.Conv2d(dim, dim, kernel_size=3, padding=1, groups=dim) # depthwise conv
         # self.mp = nn.MaxPool2d(kernel_size=3, pading=2, stride=1) # S = (s- k + 2p)/stride +1
-        self.conv1 = nn.Conv2d(dim*4, dim, kernel_size=1, padding=0) # pointwise/1x1 convs
+        self.conv1 = nn.Conv2d(dim*2, dim, kernel_size=1, padding=0) # pointwise/1x1 convs
         # self.dwconv = nn.Conv2d(
         #     dim, 
         #     dim, 
@@ -312,9 +312,9 @@ class ourblock_inception(nn.Module):
     def forward(self, x):
         input = x
         x1 = self.dwconv1(x)
-        x2 = self.dwconv2(x)
+        # x2 = self.dwconv2(x)
         x3 = self.dwconv3(x)
-        x = self.conv1(torch.concat([x1, x2, x3, x], dim=1))
+        x = self.conv1(torch.concat([x1, x3], dim=1))
 
         x = x.permute(0, 2, 3, 1) # (N, C, H, W) -> (N, H, W, C)
         x = self.norm(x)

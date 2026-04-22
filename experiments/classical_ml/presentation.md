@@ -29,6 +29,11 @@ style: |
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
   }
+  .columns-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
   blockquote {
     border-left: 4px solid #1976D2;
     background: #E3F2FD;
@@ -53,35 +58,228 @@ style: |
     border-top: 1px solid #ccc;
     padding-top: 0.3em;
   }
+  section.lead h1 {
+    font-size: 48px;
+    text-align: center;
+  }
+  section.lead h2 {
+    font-size: 32px;
+    text-align: center;
+    color: #555;
+  }
 ---
 
-# Traditional ML on Mini-ImageNet
-## Pretrained Backbones as Frozen Feature Extractors
+<!-- _class: lead -->
 
-**CS5242 Project — Section 2**
+# CS5242 Project
+## Image Classification on Mini-ImageNet
+
+**Frozen Features, Fine-Tuning, and From Scratch — a Three-Lens Comparison**
 
 ---
 
 # Agenda
 
-1. **Problem & Motivation**
-2. **Approach: Frozen Backbone + Classical Classifier**
-3. **Experimental Design**
-4. **Results: Backbone & Classifier Comparison (32×32)**
-5. **Results: Efficiency, NetScore & Training Time**
-6. **Results: Resolution Impact (224×224 vs 32×32)**
-7. **t-SNE Feature Visualisation & Generalisation Gap**
-8. **Key Findings, Backbone Downselection & Next Steps**
+1. **Problem, Data & Pre-processing** — Mini-ImageNet, EDA, normalisation choices
+2. **Three Approaches** — baseline + proposed improvement
+3. **Approach 1** — Classical ML on frozen pretrained features
+4. **Approach 2** — Fine-tuning with selective unfreezing
+5. **Approach 3** — Training from scratch
+6. **Conclusions** — cross-approach synthesis
 
 ---
 
-# Problem & Motivation
+<!-- _class: lead -->
 
-**Task:** 100-class image classification on **Mini-ImageNet** (50K train / 10K test)
+# Part 1
+## Problem, Data & Pre-processing
 
-**Challenge:** Mini-ImageNet is small by deep learning standards — end-to-end training risks overfitting
+---
 
-**Our approach:** Use pretrained ImageNet backbones as **frozen feature extractors**, then train lightweight classical classifiers on the extracted features
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+</style>
+
+# Problem Statement & Motivation
+
+**Task.** 100-class image classification on **Mini-ImageNet** — small enough to iterate on a single GPU yet rich enough to distinguish modern architectures.
+
+**Why this problem?** Canonical CV task where trade-offs between **architecture**, **data regime**, and **pretraining** can be measured cleanly. Mini-ImageNet stresses **small data** (500/class), **low resolution** (32×32), and the **pretrained-vs-scratch** divide.
+
+**Why deep learning?** 100-way image classification needs hierarchical visual features — CNN/ConvNeXt inductive biases match the input structure; no competitive classical alternative at this scale.
+
+**Why pretrained models — justified.** We use them in **A1 & A2** to quantify how much Mini-ImageNet performance is carried by ImageNet pretraining, and include **A3 (from scratch)** to isolate that contribution. The scientific question is *the value of pretraining*.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+</style>
+
+# Dataset
+
+- **Source:** Mini-ImageNet [4] — 100 classes drawn from ImageNet-1K
+- **Splits:** 50,000 train / 10,000 val / 5,000 test (fixed, reproducible)
+- **Balance:** 500 train images per class (perfectly balanced — no re-weighting needed)
+- **Resolutions tested:** native (≈500×N) resized to **224×224** and **32×32**
+
+<div class="columns">
+<div>
+
+### Why 32×32 *and* 224×224?
+- **224×224** matches pretraining → upper-bound on pretrained feature quality
+- **32×32** stresses architectures *off* design regime — robustness test + practical memory-bandwidth setting
+
+</div>
+<div>
+
+### Known Caveat
+Mini-ImageNet's 100 classes are a *subset* of ImageNet-1K. Pretrained backbones have seen these classes, so 224×224 pretrained numbers are an **upper bound**, not transfer to an unseen distribution. Approach 3 (from scratch) addresses this directly.
+
+</div>
+</div>
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+</style>
+
+# Exploratory Data Analysis
+
+<div class="columns">
+<div>
+
+![w:500](../eda/class_distribution_all_splits.png)
+
+### Class distribution
+- Exactly balanced across train/val/test — no class imbalance to correct
+- Eliminates class-weighting as a confound in later results
+
+### Dataset statistics
+- **Train mean (RGB):** `(0.479, 0.452, 0.408)`
+- **Train std (RGB):** `(0.288, 0.280, 0.294)`
+- Native resolutions cluster near 500×375
+
+</div>
+<div>
+
+### Visual sample (random grid)
+![w:280](../eda/visual_grid.png)
+
+</div>
+</div>
+
+> EDA outputs in [experiments/eda/](../eda/) — full figures from `data_analysis.ipynb`.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+blockquote { font-size: 18px; }
+</style>
+
+# Pre-processing Pipeline
+
+<div class="columns">
+<div>
+
+### Shared across all approaches
+- **Resize** to target (224 or 32) with aspect-preserving centre crop
+- **Normalise** with this dataset's own mean/std (from the train split), not ImageNet defaults
+- **Channel order** RGB, tensor in `[0,1]` before normalisation
+- Split integrity: transforms fit on **train only**; val/test use those stats
+
+</div>
+<div>
+
+### Approach-specific
+- **A2 & A3 (training):** random crop + horizontal flip augmentation
+- **A1 (frozen features):** no train-time augmentation — features extracted once and cached
+- **A3 (from scratch):** heavier augmentation may be used — *[team member to specify]*
+
+</div>
+</div>
+
+> Computing mean/std *on this dataset* is deliberate: the 32×32 resized distribution's statistics drift from full-resolution ImageNet statistics.
+
+---
+
+<!-- _class: lead -->
+
+# Part 2
+## Three Approaches — Baseline & Improvement
+
+---
+
+# The Three-Lens Design
+
+<div class="columns-3">
+<div>
+
+### Approach 1 — Classical ML
+**Role:** strong baseline using **pretrained** features
+- Frozen backbone + linear SVM / LogReg
+- Isolates feature quality from classifier choice
+- Very cheap, interpretable
+
+</div>
+<div>
+
+### Approach 2 — Fine-Tuning
+**Role:** **proposed improvement**
+- Pretrained init + selective unfreezing
+- Combines transfer with task-specific adaptation
+- Expected Pareto-best at moderate cost
+
+</div>
+<div>
+
+### Approach 3 — Scratch
+**Role:** baseline from **first principles**
+- Random init, full training
+- Same architecture family, no ImageNet prior
+- Measures *pure* in-domain signal
+
+</div>
+</div>
+
+> **Scientific question:** how much of Mini-ImageNet performance is *feature quality from pretraining* (A1) vs *task-specific adaptation* (A2) vs *learned end-to-end without prior* (A3)?
+> Reporting all three lets us attribute performance to each source instead of conflating them.
+
+---
+
+<!-- _class: lead -->
+
+# Part 3
+## Approach 1 — Classical ML
+### Pretrained Backbones as Frozen Feature Extractors
+### <span style="color:#555">(Strong baseline using pretrained features)</span>
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+blockquote { font-size: 18px; }
+</style>
+
+# Approach 1: Motivation
+
+**Idea:** Use pretrained ImageNet backbones as **frozen feature extractors**, then train lightweight classical classifiers on the extracted features.
 
 <div class="columns">
 <div>
@@ -104,7 +302,7 @@ style: |
 
 ---
 
-# Approach: Frozen Backbone + Classical Classifier
+# Approach 1: Pipeline
 
 ```
 Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector → [SVM / LogReg] → Class
@@ -115,96 +313,55 @@ Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector 
 2. Extract feature vectors via forward pass (one-time cost)
 3. Train classical classifier on extracted features
 
-**Classifiers:**
-- **Linear SVM** — maximises geometric margin (hinge loss + L2)
-- **Logistic Regression** — minimises cross-entropy (calibrated probabilities + L2)
+**Classifiers (sklearn, default hyperparameters):**
+- **Linear SVM** — `LinearSVC`, **squared-hinge** loss + L2, OvR, liblinear coordinate-descent solver
+- **Logistic Regression** — multinomial cross-entropy + L2, LBFGS, `max_iter=2000`
+
+> Results are single-seed with default hyperparameters.
 
 ---
 
-# Experimental Design
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 18px; }
+h1 { font-size: 28px; }
+h3 { font-size: 20px; }
+table { font-size: 15px; }
+blockquote { font-size: 15px; }
+</style>
+
+# Approach 1: Experimental Design
 
 ### Backbones (3 architecture families)
 
-| Backbone | Family | Params | Feature Dim | Key Innovation |
+| Backbone | Family | Params (backbone, M) | Feature Dim | torchvision weights (IN-1K top-1) |
 |---|---|---|---|---|
-| ConvNeXt-Tiny | ConvNeXt [2] | 27.9M | 768 | 7×7 DW-Conv, LayerNorm, GELU |
-| ResNet-18 | ResNet [1] | 11.2M | 512 | Basic residual blocks |
-| ResNet-34 | ResNet [1] | 21.3M | 512 | Deeper basic blocks |
-| ResNet-50 | ResNet [1] | 23.7M | 2048 | Bottleneck blocks |
-| EfficientNet-b0 | EfficientNet [3] | 4.1M | 1280 | MBConv + SE + compound scaling |
+| ConvNeXt-Tiny | ConvNeXt [2] | 27.9 | 768 | `IMAGENET1K_V1` (82.52%) |
+| ResNet-18 | ResNet [1] | 11.2 | 512 | `IMAGENET1K_V1` (69.76%) |
+| ResNet-34 | ResNet [1] | 21.3 | 512 | `IMAGENET1K_V1` (73.31%) |
+| ResNet-50 | ResNet [1] | 23.7 | 2048 | `IMAGENET1K_V2` (80.86%) |
+| EfficientNet-b0 | EfficientNet [3] | 4.1 | 1280 | `IMAGENET1K_V1` (77.69%) |
 
 ### Experiment Grid
 - **32×32**: All backbones × {SVM, LogReg}
 - **224×224**: ConvNeXt-Tiny & ResNet-18 × SVM (downselected)
 
-<div class="footnote">[1] He et al., CVPR 2016 &nbsp; [2] Liu et al., CVPR 2022 &nbsp; [3] Tan & Le, ICML 2019</div>
+<div class="footnote">[1] He et al., CVPR 2016 &nbsp; [2] Liu et al., CVPR 2022 &nbsp; [3] Tan & Le, ICML 2019 &nbsp; [4] Vinyals et al., NeurIPS 2016</div>
 
 ---
 
-# Results: Test Accuracy at 32×32
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 28px; }
+blockquote { font-size: 18px; }
+</style>
 
-| Backbone | SVM | LogReg | Winner |
-|---|---|---|---|
-| **ConvNeXt-Tiny** | **43.28%** | **44.16%** | LogReg (+0.88pp) |
-| ResNet-18 | 32.52% | 32.46% | SVM (+0.06pp) |
-| ResNet-34 | 33.08% | 33.16% | LogReg (+0.08pp) |
-| ResNet-50 | 27.34% | 33.22% | LogReg (+5.88pp) |
-| EfficientNet-b0 | 23.88% | 24.72% | LogReg (+0.84pp) |
+# Approach 1 — Results: NetScore, Accuracy, Inference & Parameters
 
-> **ConvNeXt-Tiny leads by 10+ pp** across both classifiers.
-> LogReg matches or beats SVM for 4 of 5 backbones at 32×32 — noisy features favour probabilistic calibration over max-margin.
+![w:920](analysis_netscore_combined.png)
 
----
-
-# Why ConvNeXt-Tiny Dominates at 32×32
-
-The key lies in how each architecture's **stem** processes low-resolution input:
-
-<div class="columns">
-<div>
-
-### ConvNeXt-Tiny Stem
-- **4×4 stride-4 patchify** convolution
-- 32×32 input → **8×8 feature map** after stem
-- Subsequent **7×7 depthwise kernels** still have meaningful spatial extent to work with
-- LayerNorm stabilises activations; GELU preserves gradient flow
-
-</div>
-<div>
-
-### ResNet Stem
-- **7×7 stride-2** conv + **3×3 stride-2** max-pool
-- 32×32 input → **8×8** after stem, then quickly **1×1** through residual stages
-- Deeper layers receive **spatially degenerate** feature maps — no local structure to exploit
-- BatchNorm statistics are calibrated for 224×224 distributions
-
-</div>
-</div>
-
-> ConvNeXt's patchify stem is resolution-adaptive: it reduces spatial dims in one step without the cascading downsampling that collapses small inputs in ResNets.
-
----
-
-# Why LogReg Outperforms SVM at 32×32
-
-At 32×32, extracted features are **noisy and less linearly separable**. This shifts the advantage from margin-based to probabilistic classifiers:
-
-| Property | SVM (hinge loss) | LogReg (cross-entropy) |
-|---|---|---|
-| **Objective** | Maximise geometric margin | Minimise calibrated log-likelihood |
-| **Noise handling** | Margin amplifies noisy support vectors | Probabilistic weighting downweights ambiguous samples |
-| **High-dim behaviour** | Overfits when signal-to-noise is low | L2 + cross-entropy regularises more gracefully |
-| **Solver scaling** | QP: scales poorly with dim (2048-d → 3153s) | LBFGS: predictable convergence (2048-d → 680s) |
-
-**ResNet-50 is the extreme case:** 2048-d features with heavy noise at 32×32 → SVM drops to 27.34% while LogReg holds at 33.22% (+5.88 pp). The hinge loss concentrates on a small set of support vectors that are themselves noisy, while cross-entropy loss averages over all samples.
-
----
-
-# Results: NetScore, Accuracy, Inference & Parameters
-
-![w:1000](analysis_netscore_combined.png)
-
-> **Key observation:** ConvNeXt-Tiny leads on **accuracy** (44.16%) despite having the most parameters, while ResNet-18 leads on **NetScore** (45.4) due to its small size and fast inference. EfficientNet-b0 is both the slowest and least accurate.
+> **Key observation:** ConvNeXt-Tiny leads on **accuracy** (44.16%) despite the most parameters, while ResNet-18 leads on **NetScore** (45.4, per Wong [6]) due to its small size and fast inference. EfficientNet-b0 is slowest and least accurate.
 
 ---
 
@@ -216,7 +373,7 @@ h1 { font-size: 30px; }
 h3 { font-size: 20px; }
 </style>
 
-# Results: Efficiency Comparison (32×32)
+# Approach 1 — Efficiency Comparison (32×32)
 
 <div class="columns">
 <div>
@@ -254,104 +411,94 @@ $$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
 
 ---
 
+# Why ConvNeXt-Tiny Dominates at 32×32
+
+The key lies in how each architecture's **stem** processes low-resolution input:
+
+<div class="columns">
+<div>
+
+### ConvNeXt-Tiny Stem
+- **4×4 stride-4 patchify** convolution
+- 32×32 input → **8×8 feature map** after stem
+- Subsequent **7×7 depthwise kernels** still have meaningful spatial extent to work with
+- LayerNorm stabilises activations; GELU preserves gradient flow
+
+</div>
+<div>
+
+### ResNet Stem
+- **7×7 stride-2** conv + **3×3 stride-2** max-pool
+- 32×32 input → **8×8** after stem, then quickly **1×1** through residual stages
+- Deeper layers receive **spatially degenerate** feature maps — no local structure to exploit
+- BatchNorm statistics are calibrated for 224×224 distributions
+
+</div>
+</div>
+
+> ConvNeXt's patchify stem is resolution-adaptive: it reduces spatial dims in one step without the cascading downsampling that collapses small inputs in ResNets.
+
+---
+
 <!-- _class: "" -->
 <style scoped>
-section { font-size: 17px; }
-table { font-size: 15px; }
+section { font-size: 20px; }
 h1 { font-size: 28px; }
 </style>
 
-# Training Time: LogReg vs SVM (32×32)
-
-| Backbone | Feat Dim | SVM (s) | LogReg (s) | Speedup |
-|---|---|---|---|---|
-| ConvNeXt-Tiny | 768 | 1502 | **278** | **5.4×** |
-| ResNet-18 | 512 | 465 | **347** | 1.3× |
-| ResNet-34 | 512 | 634 | **527** | 1.2× |
-| ResNet-50 | 2048 | 3153 | **680** | 4.6× |
-| EfficientNet-b0 | 1280 | 4147 | **454** | **9.1×** |
-
-> **LogReg trains 1.2–9× faster** across all backbones.
-
-**Across classifiers:** SVM uses dual coordinate descent (100 OvR binary QPs) while LogReg uses LBFGS to optimise all 100 classes jointly on a smooth cross-entropy objective.
-
-**Across backbones:** Training time depends on feature dimensionality **and** feature quality. LogReg generally scales with dimension — 512-d ResNets (347–527s), 1280-d EffNet (454s), 2048-d ResNet-50 (680s) — though ConvNeXt-Tiny (768-d, 278s) is an outlier, converging faster thanks to its better-separated features. SVM is more sensitive — EfficientNet-b0 (1280-d, 4147s) is slower than ResNet-50 (2048-d, 3153s) despite smaller features, because EffNet's near-random features (23.88% acc) create massive class overlap where nearly every sample becomes a support vector, inflating the QP solver's active constraint set.
-
----
-
 # Why Architecture Matters More Than Depth
 
-![w:1100](analysis_efficiency_tradeoff.png)
+![w:850](analysis_efficiency_tradeoff.png)
 
-- **ResNets cluster** at 32–33% regardless of depth → resolution-limited, not capacity-limited
+- **ResNet-18/34/50 cluster within ~1 pp on LogReg** (32.46 / 33.16 / 33.22) → extra depth gives no headroom at 32×32
 - **ConvNeXt-Tiny** leads by 10+ pp — patchify stem + 7×7 DW-Conv preserve spatial structure
-- **EfficientNet-b0 collapses** — compound scaling breaks at 7× below design resolution
-
----
-
-# Why EfficientNet-b0 Fails at 32×32
-
-EfficientNet's **compound scaling** [3] jointly optimises three axes:
-
-$$\text{depth: } d = \alpha^\phi, \quad \text{width: } w = \beta^\phi, \quad \text{resolution: } r = \gamma^\phi$$
-
-The architecture is **designed for 224×224** ($r = 1.0$). At 32×32 ($r \approx 0.14$):
-
-1. **Squeeze-and-Excitation modules fail** — they globally average-pool feature maps to compute channel attention weights. When pre-pooling maps are 1×1 or 2×2, the "squeeze" output is essentially random noise
-2. **MBConv depthwise convolutions underperform** — 3×3 and 5×5 kernels on 1–2 pixel feature maps have no spatial variation to detect
-3. **Depth/width are over-scaled for the resolution** — the network has more capacity than the spatial information can support, leading to redundant or contradictory features
-
-> EfficientNet achieves SOTA by balancing all three axes. Collapsing resolution to 14% of design while keeping depth/width fixed **violates the core design principle**.
-
-<div class="footnote">[3] M. Tan and Q. V. Le, "EfficientNet: Rethinking model scaling for CNNs," ICML 2019.</div>
-
----
-
-# Resolution Impact: 224×224 → 32×32
-
-![w:750](analysis_accuracy_drop.png)
-
-> Both backbones lose ≈**50 pp** — a fundamental resolution floor for frozen pretrained backbones.
-> ConvNeXt-Tiny's 10.6 pp advantage is **preserved** across both resolutions.
-
----
-
-# Why the ≈50 pp Drop Is Nearly Identical
-
-The uniform ~50 pp drop across both architectures reveals a **shared bottleneck**:
-
-1. **Pretrained filters are calibrated for 224×224** — Gabor-like edge detectors in early layers expect specific spatial frequencies. At 32×32, the Nyquist frequency is 7× lower — fine textures and edges are aliased away before the network even sees them
-
-2. **Receptive field saturation** — at 224×224, a ResNet-18 layer-4 neuron has an effective receptive field of ~100 px (partial image). At 32×32, the same neuron's receptive field covers the **entire image** after just 2 stages, eliminating the hierarchical spatial decomposition that makes CNNs powerful
-
-3. **The gap is preserved (10.6→10.8 pp)** because ConvNeXt's advantage is architectural, not resolution-dependent — its patchify stem, LayerNorm, and wider kernels extract better features at **any** spatial scale
-
-> This suggests ~50 pp is a **hard floor** for frozen ImageNet backbones on 32×32 inputs — task-specific fine-tuning is needed to break through it.
-
----
-
-# t-SNE Feature Visualisation
-
-![w:550](downselected_backbones_tsne.png)
-
-- **224×224:** Tight, well-separated clusters — classes are linearly separable in feature space, enabling high accuracy (ConvNeXt: 93.88%, ResNet-18: 83.24%)
-- **32×32:** Clusters collapse and overlap heavily — classes become entangled, forcing classifiers to draw boundaries through mixed regions, which explains the ~50 pp accuracy drop
-- **ConvNeXt-Tiny** retains more inter-class separation than ResNet-18 at both resolutions, consistent with its 10+ pp accuracy advantage
+- **EfficientNet-b0 underperforms** — designed for 224×224; at 32×32 its feature maps are too small for Squeeze-and-Excitation (SE) attention and depthwise convolutions to be effective
+- *Caveat:* RN-50 uses torchvision `V2` weights; the "depth doesn't help" claim holds for LogReg but SVM+RN-50 is an outlier
 
 ---
 
 # Generalisation Gap
 
-![w:1100](analysis_generalisation_gap.png)
+![w:900](analysis_generalisation_gap.png)
 
-> **Val − Test gap is uniformly small (0.6–3.0 pp)** — linear models on frozen features generalise well.
-> Largest gap: ResNet-34 SVM (3.0 pp). Smallest: ResNet-50 LogReg (0.6 pp).
+> Val−Test gap is uniformly small (0.6–3.0 pp) — linear models on frozen features generalise well.
 
 ---
 
-# Backbone Downselection for Fine-Tuning
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 16px; }
+h1 { font-size: 24px; }
+blockquote { font-size: 13px; }
+</style>
 
-Based on these results, we select **two backbones** for Section 3 (fine-tuning):
+# Resolution Impact & t-SNE Feature Visualisation
+
+<div class="columns">
+<div>
+
+![w:440](analysis_accuracy_drop.png)
+
+- Both backbones lose ≈**50 pp** (224→32) — severe resolution floor
+- ConvNeXt-Tiny's ~10 pp advantage preserved at both resolutions
+
+</div>
+<div>
+
+![w:440](downselected_backbones_tsne.png)
+
+- **224×224:** Tight, well-separated clusters — high linear-probe accuracy
+- **32×32:** Clusters collapse — consistent with ~50 pp drop
+- ConvNeXt-Tiny retains more inter-class separation at both resolutions
+
+</div>
+</div>
+
+---
+
+# Backbone Downselection for Later Approaches
+
+Based on these results, we select **two backbones** for Approaches 2 and 3:
 
 <div class="columns">
 <div>
@@ -374,44 +521,60 @@ Based on these results, we select **two backbones** for Section 3 (fine-tuning):
 </div>
 </div>
 
-> This pairing lets us compare fine-tuning strategies (frozen, partial unfreeze, full, LoRA) on a **modern vs classical** architecture.
+> This pairing lets us compare fine-tuning and from-scratch strategies on a **modern vs classical** architecture.
 
 ---
 
-# Downselected Backbones — Comparison
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 19px; }
+h1 { font-size: 28px; }
+ol { margin-top: 0.4em; }
+ol li { margin-bottom: 0.4em; }
+</style>
 
-![w:1100](downselected_backbones_comparison.png)
+# Approach 1 — Key Takeaways
 
----
-
-# Key Takeaways
-
-1. **ConvNeXt-Tiny is the best backbone** — leads by 10+ pp at any resolution thanks to patchify stem and modern CNN design
-
-2. **Resolution is critical** — 224→32 causes catastrophic ≈50 pp loss for all frozen backbones
-
-3. **LogReg matches or beats SVM at 32×32** — noisy features favour probabilistic calibration (4 of 5 backbones); LogReg also trains 1.2–9× faster
-
-4. **Architecture > Depth** — ResNet-18/34/50 cluster within 1 pp; design innovations (ConvNeXt) matter far more
-
-5. **EfficientNet-b0 fails at low resolution** — compound scaling breaks down at 7× below design resolution
-
-6. **Strong generalisation** — val-test gap < 3 pp across all configs (linear models + frozen features = implicit regularisation)
+1. **ConvNeXt-Tiny is the strongest backbone** — leads by 10+ pp at both resolutions on Mini-ImageNet
+2. **Architecture matters more than depth** — RN-18/34/50 cluster within ~1 pp; ConvNeXt's stem design is the larger effect
+3. **Resolution is the dominant factor** — 224→32 costs ≈50 pp for both probed backbones; larger than any architecture gap
+4. **EfficientNet-b0 underperforms at 32×32** — designed for 224×224; feature maps too small for SE attention and depthwise convolutions
+5. **Small val–test gap (0.6–3.0 pp)** — linear probes on frozen features generalise well
+6. **Limitations.** Single seed, default hyperparameters, Mini-ImageNet ⊂ ImageNet-1K, mixed `V1`/`V2` torchvision weights
 
 ---
 
-# Next Steps: Fine-Tuning (Section 3)
+<!-- _class: lead -->
 
-With ConvNeXt-Tiny and ResNet-18 as our downselected backbones, we will explore:
-
-- **Frozen backbone** → linear probe (baseline, already done)
-- **Partial unfreezing** → unfreeze last N layers
-- **Full fine-tuning** → all parameters trainable
-- **LoRA** → low-rank adaptation of backbone weights
-
-**Goal:** Determine how much task-specific adaptation can improve over frozen feature extraction, and whether ConvNeXt-Tiny's architectural advantage persists after fine-tuning.
+# Part 4
+## Approach 2 — Fine-Tuning
 
 ---
+
+<!-- _class: lead -->
+
+# Part 5
+## Approach 3 — Training from Scratch
+
+---
+
+<!-- _class: lead -->
+
+# Part 6
+## Conclusions
+
+---
+
+# Conclusions
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 17px; }
+h1 { font-size: 28px; }
+p { margin: 0.4em 0; }
+</style>
 
 # References
 
@@ -421,11 +584,16 @@ With ConvNeXt-Tiny and ResNet-18 as our downselected backbones, we will explore:
 
 [3] M. Tan and Q. V. Le, "EfficientNet: Rethinking model scaling for convolutional neural networks," in *Proc. ICML*, 2019, pp. 6105–6114.
 
+[4] O. Vinyals, C. Blundell, T. Lillicrap, K. Kavukcuoglu, and D. Wierstra, "Matching networks for one-shot learning," in *Proc. NeurIPS*, 2016.
+
+[5] W. Luo, Y. Li, R. Urtasun, and R. Zemel, "Understanding the effective receptive field in deep convolutional neural networks," in *Proc. NeurIPS*, 2016.
+
+[6] A. Wong, "NetScore: Towards universal metrics for large-scale performance analysis of deep neural networks," in *Proc. Int. Conf. Image Analysis and Recognition (ICIAR)*, 2019.
+
+[7] R.-E. Fan, K.-W. Chang, C.-J. Hsieh, X.-R. Wang, and C.-J. Lin, "LIBLINEAR: A library for large linear classification," *JMLR*, vol. 9, pp. 1871–1874, 2008.
+
 ---
 
 <!-- _class: lead -->
 
 # Thank You
-## Questions?
-
-**CS5242 Project — Traditional ML Approach**
