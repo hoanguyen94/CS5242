@@ -3,7 +3,6 @@
 **/checkpoint
 **/tmp
 **/__pycache__/
-**.pptx
 **/dev
 .venv/
 .claude/
