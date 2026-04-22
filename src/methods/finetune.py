@@ -28,6 +28,7 @@ from ..model import (
     build_backbone, set_freeze_policy,
     count_params, try_flops, evaluate,
     print_freeze_summary, extract_features_for_vis,
+    measure_pytorch_inference_time_ms,
 )
 
 
@@ -133,6 +134,16 @@ def cutmix(x, y, alpha=1.0):
 def mix_criterion(criterion, logits, y_a, y_b, lam):
     """Compute mixed loss for Mixup/CutMix."""
     return lam * criterion(logits, y_a) + (1 - lam) * criterion(logits, y_b)
+
+
+def _transform_img_size(eval_tf, default: int = 224) -> int:
+    """Best-effort extraction of image size from a torchvision transform."""
+    if hasattr(eval_tf, "transforms"):
+        for transform in eval_tf.transforms:
+            if hasattr(transform, "size"):
+                size = transform.size
+                return size if isinstance(size, int) else size[0]
+    return default
 
 
 def train_finetune(
@@ -309,16 +320,14 @@ def train_finetune(
     # Per-image inference timing & peak GPU memory
     model.load_state_dict(torch.load(ckpt_path, map_location=device))
     model.eval()
-    n_imgs, t_inf = 0, 0.0
-    with torch.no_grad():
-        for x, _ in test_loader:
-            x = x.to(device, non_blocking=True)
-            t1 = time.time()
-            _ = model(x)
-            t2 = time.time()
-            t_inf += (t2 - t1)
-            n_imgs += x.size(0)
-    results["inference_time_per_image_ms"] = (t_inf / max(n_imgs, 1)) * 1000.0
+    img_size = _transform_img_size(eval_tf)
+    results["inference_time_per_image_ms"] = measure_pytorch_inference_time_ms(
+        model=model,
+        img_size=img_size,
+        device=device,
+        n_warmup=10,
+        n_runs=100,
+    )
     results["peak_gpu_mem_mb"] = (
         torch.cuda.max_memory_allocated(device=device) / (1024 ** 2)
         if device.type == "cuda" else None
