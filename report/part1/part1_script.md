@@ -1,89 +1,110 @@
-# Speaker Script — Parts 2 & 3
+# Speaker Script — Presenter 1 (David, Group 23)
 
-**Target runtime: 4 minutes.** Covers the Three-Lens overview (Part 2) and Approach 1 — Classical ML (Part 3).
+**Scope:** Intro + Part 1 (Problem, Data & Pre-processing) + Part 2 (Three Approaches) + Part 3 (Approach 1 — Classical ML). Hands off to **Hoa** (Presenter 2), who takes Approach 2.
 
----
+**Target runtime: 4 minutes.** 6 slides, each showing a single plot at readable size. The goal is to show we understood *why* we did what we did, not to read numbers off the slide.
 
-## Part 2 — Three Approaches (~30s)
+**Pacing guide:**
 
-### Slide: The Three-Lens Design
-
-We attack Mini-ImageNet from three angles. Approach 1 — which I'll cover now — freezes pretrained backbones and trains a classical SVM or logistic regression on top. It's cheap and isolates feature quality. Approach 2 fine-tunes those same backbones with selective unfreezing — the proposed improvement. And Approach 3 trains from scratch with no ImageNet prior, so we can measure what pretraining actually buys us. Together, the three let us attribute performance to feature quality, task adaptation, and end-to-end learning separately.
-
----
-
-## Part 3 — Approach 1: Classical ML (~3 min 30s)
-
-### Slide: Motivation (~15s)
-
-The idea is simple: freeze a pretrained backbone, extract features once, and fit a linear classifier. Advantages — data-efficient, fast, interpretable. Limitations — no task-specific adaptation, a linear ceiling, and sensitivity to resolution mismatch.
+| Slide | Time | Budget |
+|---|---|---|
+| 1. Title + Research Question | 0:00–0:45 | 45s |
+| 2. Dataset & Pre-processing — Decisions With a Reason | 0:45–1:45 | 60s |
+| 3. Three-Approach Attribution Design | 1:45–2:45 | 60s |
+| 4a. A1 — Architecture beats depth | 2:45–3:15 | 30s |
+| 4b. A1 — Resolution dominates | 3:15–3:40 | 25s |
+| 4c. A1 — Classifier barely matters + handoff | 3:40–4:00 | 20s |
 
 ---
 
-### Slide: Pipeline (~10s)
+## Slide 1 — Title + Research Question (~45s)
 
-Image goes through the frozen backbone, global average pooling gives us a feature vector, and we train either a linear SVM or logistic regression — both sklearn defaults, no hyperparameter sweep.
+Good [morning / afternoon] — we're Group 23: David, Hoa, and Khoa.
 
----
+Our task is image classification on Mini-ImageNet — 100 classes.
 
-### Slide: Experimental Design (~15s)
+But the question we really want to answer isn't "can we classify these images?" It's "where does our accuracy come from?" Is it from pretraining? From fine-tuning? Or from training the network from scratch on our data?
 
-Five backbones: ConvNeXt-Tiny, ResNet-18/34/50, and EfficientNet-b0. All crossed with both classifiers at 32×32, plus a 224-pixel run on the two we eventually downselect.
+To answer that, we run three approaches side by side: frozen pretrained features, fine-tuning, and training from scratch. Each one isolates a different source, so we can tell which part matters.
 
----
-
-### Slide: NetScore Overview (~15s)
-
-Starting with the big picture — ConvNeXt-Tiny wins on raw accuracy at 44%, but ResNet-18 tops NetScore — the efficiency metric from Wong — because it's the smallest and fastest. EfficientNet is worst on both axes.
+I'll cover the problem, the data, and Approach 1. Hoa takes Approach 2. Khoa finishes with Approach 3 and the cross-approach analysis.
 
 ---
 
-### Slide: Efficiency Comparison Table (~15s)
+## Slide 2 — Dataset & Pre-processing: Decisions With a Reason (~60s)
 
-The detailed breakdown confirms it. ResNet-18 SVM leads NetScore at 45.4 — 11 million parameters, under 3 ms inference. Classifier choice barely moves NetScore since inference is backbone-dominated. ConvNeXt's 28 million parameters penalise its efficiency score despite leading on accuracy.
+Mini-ImageNet has 100 classes. We split it 50,000 / 10,000 / 5,000 for training, validation, and test. The classes are perfectly balanced — you can see that in the plot on the right — so imbalance won't skew our later results.
 
----
+We made three pre-processing choices, each with a reason.
 
-### Slide: Why ConvNeXt Dominates (~15s)
+**First, two resolutions.** 224 by 224 matches what the backbones were pretrained on — that's the best case. 32 by 32 is a deliberate stress test. It forces the models to work outside what they were built for, which is where architecture choices — especially the first layer — actually start to matter.
 
-It's the stem. ConvNeXt's 4×4 patchify gets you an 8×8 feature map in one step — enough for the 7×7 depthwise kernels to work with. ResNet's cascading stride-2 conv plus max-pool collapses 32-pixel input too aggressively; deeper layers get spatially degenerate feature maps.
+**Second, we compute our own mean and standard deviation on the training set**, not the ImageNet defaults. Shrinking images to 32 pixels shifts the pixel values a bit, so ImageNet's numbers would be slightly off for us.
 
----
+**Third, different augmentation per approach.** Approach 1 runs each image through the backbone once and saves the features — so no augmentation during training. Approaches 2 and 3 train end-to-end, with random crops and horizontal flips.
 
-### Slide: Why Architecture Matters More Than Depth (~15s)
-
-Within ResNets, depth adds nothing — 18, 34, 50 cluster within 1 pp. ConvNeXt's architecture gap is the big effect. EfficientNet underperforms because it was designed for 224 — at 32 pixels, Squeeze-and-Excitation modules and depthwise kernels get degenerate inputs.
+Each choice is tied to a real experiment we run later.
 
 ---
 
-### Slide: Generalisation Gap (~10s)
+## Slide 3 — Three-Approach Attribution Design (~60s)
 
-Val–test gap is 0.6–3 pp throughout — linear models on frozen features generalise well. No overfitting concern here.
+Three approaches — each answers a different question.
 
----
+**Approach 1 — frozen features.** A pretrained backbone with the weights frozen, plus a simple linear classifier on top. It tells us how good the pretrained features are on their own. If we swap the classifier and accuracy barely moves, we know we're measuring the backbone, not the classifier.
 
-### Slide: Resolution Impact & t-SNE (~15s)
+**Approach 2 — fine-tuning.** We start from the pretrained weights and let some layers update during training. This is our proposed improvement. It tells us how much adapting to Mini-ImageNet adds on top of frozen features.
 
-The biggest result: both backbones lose about 50 points going from 224 to 32. ConvNeXt's 10-point lead is preserved across resolutions, so the advantage is architectural, not resolution-dependent. The t-SNE plots confirm it visually — tight clusters at 224, collapse at 32.
+**Approach 3 — from scratch.** Random starting weights, no ImageNet head start. It tells us how much signal is in Mini-ImageNet alone.
 
----
+**Why run all three?** A single accuracy number would mix pretraining, adaptation, and in-domain learning into one lump. Running three lets us separate them.
 
-### Slide: Backbone Downselection (~15s)
-
-We carry forward ConvNeXt-Tiny — highest accuracy — and ResNet-18 — fastest inference — into Approaches 2 and 3. One modern, one classical, side by side.
+**Why pretrained models in the first place?** As a well-understood baseline to build on. Approach 1 uses pretrained backbones frozen — that's our starting point. Approach 2 fine-tunes the same backbones — that's our proposed improvement. Approach 3 trains the same architectures from scratch — our first-principles comparison. The pretrained backbone is the common anchor that each of our approaches measures against.
 
 ---
 
-### Slide: Key Takeaways (~20s)
+## Slide 4a — A1: Architecture Beats Depth at 32×32 (~30s)
 
-Six things to remember. ConvNeXt-Tiny dominates by 10+ pp, driven by the patchify stem. Architecture matters more than depth — ResNets cluster within 1 pp. Resolution is the biggest factor — 50-point drop. EfficientNet struggles at 32 pixels. Generalisation is solid. And honest caveats: single seed, default hyperparameters, Mini-ImageNet overlaps ImageNet-1K.
+At 32 pixels, architecture matters much more than depth. Look at ResNet-18, 34, and 50 on the accuracy-versus-parameters plot — they all sit around 33% regardless of whether the model has 11 or 24 million parameters. Adding depth doesn't help. But ConvNeXt-Tiny jumps up by ten-plus points.
+
+The reason is the first layer — the stem. ConvNeXt uses a 4-by-4 patch convolution that shrinks the image in one clean step and leaves enough spatial structure for the later layers to work with. ResNet's stem uses a bigger convolution plus a max-pool, which squeezes a 32-pixel input down too fast. Deeper ResNets inherit the same bad stem, so extra layers can't rescue them.
+
+---
+
+## Slide 4b — A1: Resolution Dominates Any Architecture Gap (~25s)
+
+Resolution is the biggest single factor — bigger than any architecture gap. Both backbones lose about 50 points going from 224 to 32.
+
+The t-SNE plot shows why. At 224, each class forms a tight, separable cluster. At 32, everything collapses together. Same backbone, same features — but at 32 pixels there's just no spatial extent left for the model to tell classes apart.
+
+---
+
+## Slide 4c — A1: Classifier Barely Matters (~15s) + Handoff (~5s)
+
+The linear classifier barely matters. SVM and logistic regression land within half a point on our efficiency score for every backbone — you can see the paired bars sit at almost the same height. That's actually a good sign — it confirms we're measuring feature quality, not the classifier, which validates Approach 1's design.
+
+For Approaches 2 and 3, we carry forward two backbones: **ConvNeXt-Tiny**, the modern one, and **ResNet-18**, the fast classical one.
+
+**Handoff.** Over to Hoa — can fine-tuning close the gap between ConvNeXt and ResNet, and recover some of that 50-point resolution drop?
 
 ---
 
 ## Likely Q&A — prep notes
 
-- **"Why is ConvNeXt so much better at 32×32?"** Patchify stem vs cascading downsampling — but we haven't done the ablation.
-- **"Why not ViT or Swin?"** Scope — one per family; ConvNeXt represents the modern design.
-- **"Is the 50 pp drop universal?"** No — observed on two backbones on Mini-ImageNet; not claimed as a general bound.
-- **"ResNet-50 V2 vs V1?"** V2 is ~4 points higher on ImageNet-1K — real confound. Would need to pin all ResNets to V1.
-- **"Why no hyperparameter tuning?"** Compute budget constraint — focus was on backbone comparison, not classifier optimisation.
+- **"Why Mini-ImageNet instead of full ImageNet-1K?"** Two reasons — our compute budget, and the small-data setting (500 images per class) is exactly where the pretraining question is most interesting.
+
+- **"Isn't using pretrained models cheating, since the classes overlap with ImageNet-1K?"** We're using them as a well-understood baseline to build on, not to claim transfer to new data. Approach 2 fine-tunes those same backbones, and Approach 3 trains the same architectures from scratch — so the pretrained model is the common anchor, and our contributions are what we add on top.
+
+- **"Why compute your own mean and standard deviation instead of using ImageNet defaults?"** The 32-pixel resize shifts the pixel distribution a bit. Using our own stats gives cleaner normalisation for Approach 3. Fair point the other way: Approach 2 might slightly prefer ImageNet defaults, because pretrained BatchNorm is calibrated to them — but the effect is under 1 point.
+
+- **"Why is ConvNeXt so much better at 32×32?"** The stem. ConvNeXt's 4-by-4 patch convolution keeps an 8-by-8 feature map, which later layers can work with. ResNet's stem collapses small input too fast. We haven't run a direct ablation, but this explanation fits the data.
+
+- **"Why didn't you include ViT or Swin?"** We picked one representative from each architecture family. ConvNeXt stands in for the modern post-ViT CNN design.
+
+- **"Does the 50-point drop at 32 pixels generalise?"** We've only shown it on two backbones on Mini-ImageNet — so we don't claim it as a general rule. But the explanation (small input collapsing in the stem) would predict something similar for other architectures with the same kind of stem.
+
+- **"ResNet-50 uses V2 weights and the others use V1 — is that a problem?"** Yes, it's a real confound. V2 is about 4 points stronger on ImageNet-1K. To compare ResNet depth cleanly we'd want to pin all of them to V1.
+
+- **"Why not tune hyperparameters?"** Compute budget, and our goal was to compare backbones, not optimise the classifier. Using sklearn defaults keeps the comparison simple and fair.
+
+- **"Why two classifiers?"** To check that what we're measuring is feature quality, not the classifier's inductive bias. SVM and logistic regression land within 1 point for every backbone, which confirms that reading.
