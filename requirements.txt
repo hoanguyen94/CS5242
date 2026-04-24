@@ -1,12 +1,12 @@
 numpy
+pandas
 torch
 torchvision
 Pillow
 matplotlib
 scikit-learn
 datasets
-pandas
 joblib
-thop
-ipython
 tqdm
+ipython
+thop
