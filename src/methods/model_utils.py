@@ -71,8 +71,28 @@ class ResNet(nn.Module):
             layers.append(block(self.in_planes, planes, stride))
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
-
+    
+    def forward_features(self, x):
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.maxpool(out)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = self.avgpool(out)
+        out = torch.flatten(out, 1)
+        return out
+    
+    def head(self, x):
+        out = self.fc(x)
+        return out
+    
     def forward(self, x):
+        x = self.forward_features(x)
+        x = self.head(x)
+        return x
+    
+    def forward1(self, x):
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.maxpool(out)
         out = self.layer1(out)
@@ -114,7 +134,6 @@ class LayerNorm(nn.Module):
             x = (x - u) / torch.sqrt(s + self.eps)
             x = self.weight[:, None, None] * x + self.bias[:, None, None]
             return x
-
 
 
 class ConvNeXtBlock(nn.Module):
@@ -189,7 +208,6 @@ class ConvNeXt(nn.Module):
         x = self.forward_features(x)
         x = self.head(x)
         return x
-
 
 class ourblock(nn.Module):
     """ ConvNeXt Block.
@@ -277,9 +295,6 @@ class ournet(nn.Module):
         return x
 
 
-
-
-
 class ourblock_inception(nn.Module):
     """ ConvNeXt Block.
     Args:
@@ -312,7 +327,6 @@ class ourblock_inception(nn.Module):
     def forward(self, x):
         input = x
         x1 = self.dwconv1(x)
-        # x2 = self.dwconv2(x)
         x3 = self.dwconv3(x)
         x = self.conv1(torch.concat([x1, x3], dim=1))
 
