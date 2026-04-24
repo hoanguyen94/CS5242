@@ -97,7 +97,7 @@ Presenter 3 (Khoa) — Part 5 (Approach 3 — Scratch) + Part 6 (Analysis) + Par
 
 ## How much of our accuracy comes from pretraining, fine-tuning, or training from scratch?
 
-**Group 23** — David · Hoa · Khoa
+**Group 23** — Ngo Thanh Trung · Nguyen Thi Hoa · Nguyen Vu Anh Khoa
 
 *A three-lens attribution study — 100 classes, small data, low resolution.*
 
@@ -316,17 +316,15 @@ h1 { font-size: 28px; }
 **Carry forward** to A2 & A3: **ConvNeXt-Tiny** + **ResNet-18**.
 
 <!--
-[Presenter 1 (David) — 3:40–3:55, ~15s]
-"The linear classifier barely matters. SVM and logistic regression land
-within half a NetScore point for every backbone. That's actually a
-VALIDATION — we set out to measure feature quality, and swapping the
-classifier doesn't change the ranking, so we *are* measuring feature
-quality."
-"For Approaches 2 and 3 we carry forward two backbones: ConvNeXt-Tiny
-and ResNet-18."
+[Presenter 1 (David) — 3:40–3:57, ~17s]
+"The classifier barely matters. SVM and logistic regression land within
+half a NetScore point for every backbone. That's a VALIDATION — we set
+out to measure feature quality, and swapping the classifier doesn't
+change the ranking."
+"We carry forward ConvNeXt-Tiny and ResNet-18 into A2 and A3."
 
-[Presenter 1 (David) — 3:55–4:00, ~5s HANDOFF]
-"Over to Hoa."
+[Presenter 1 (David) — 3:57–4:00, ~3s HANDOFF]
+"Over to Hoa — can fine-tuning close the ConvNeXt-vs-ResNet gap?"
 -->
 
 ---

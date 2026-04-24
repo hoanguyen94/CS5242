@@ -2,7 +2,7 @@
 
 **Scope:** Intro + Part 1 (Problem, Data & Pre-processing) + Part 2 (Three Approaches) + Part 3 (Approach 1 — Classical ML). Hands off to **Hoa** (Presenter 2), who takes Approach 2.
 
-**Target runtime: 4 minutes.** 6 slides, each showing a single plot at readable size. The goal is to show we understood *why* we did what we did, not to read numbers off the slide.
+**Target runtime: 4 minutes.** 6 slides, each showing a single plot at readable size. The goal is to show we understood *why* we did what we did, not to read numbers off the slide. Word counts tuned for ~165 wpm delivery with ~20 s of overall buffer.
 
 **Pacing guide:**
 
@@ -17,7 +17,7 @@
 
 ---
 
-## Slide 1 — Title + Research Question (~45s)
+## Slide 1 — Title + Research Question (~45s, ~115 words)
 
 Good [morning / afternoon] — we're Group 23: David, Hoa, and Khoa.
 
@@ -31,47 +31,45 @@ I'll cover the problem, the data, and Approach 1. Hoa takes Approach 2. Khoa fin
 
 ---
 
-## Slide 2 — Dataset & Pre-processing: Decisions With a Reason (~60s)
+## Slide 2 — Dataset & Pre-processing: Decisions With a Reason (~47s, ~130 words)
 
-Mini-ImageNet has 100 classes. We split it 50,000 / 10,000 / 5,000 for training, validation, and test. The classes are perfectly balanced — you can see that in the plot on the right — so imbalance won't skew our later results.
+Mini-ImageNet has 100 classes, split fifty / ten / five thousand for train, val, and test. The classes are perfectly balanced — you can see that in the plot — so imbalance won't skew our later results.
 
 We made three pre-processing choices, each with a reason.
 
-**First, two resolutions.** 224 by 224 matches what the backbones were pretrained on — that's the best case. 32 by 32 is a deliberate stress test. It forces the models to work outside what they were built for, which is where architecture choices — especially the first layer — actually start to matter.
+**First, two resolutions.** 224 matches what the backbones were pretrained on — our best case. 32 is a deliberate stress test. It forces models to work outside what they were built for, which is where architecture choices — especially the first layer — really start to matter.
 
-**Second, we compute our own mean and standard deviation on the training set**, not the ImageNet defaults. Shrinking images to 32 pixels shifts the pixel values a bit, so ImageNet's numbers would be slightly off for us.
+**Second, our own normalisation stats**, not ImageNet defaults. Shrinking to 32 pixels shifts the pixel values, so ImageNet's numbers would be slightly off for us.
 
-**Third, different augmentation per approach.** Approach 1 runs each image through the backbone once and saves the features — so no augmentation during training. Approaches 2 and 3 train end-to-end, with random crops and horizontal flips.
-
-Each choice is tied to a real experiment we run later.
+**Third, different augmentation per approach.** Approach 1 caches features once, so no augmentation during training. Approaches 2 and 3 train end-to-end with random crops and flips.
 
 ---
 
-## Slide 3 — Three-Approach Attribution Design (~60s)
+## Slide 3 — Three-Approach Attribution Design (~55s, ~150 words)
 
-Three approaches — each answers a different question.
+Three approaches, each answering a different question.
 
-**Approach 1 — frozen features.** A pretrained backbone with the weights frozen, plus a simple linear classifier on top. It tells us how good the pretrained features are on their own. If we swap the classifier and accuracy barely moves, we know we're measuring the backbone, not the classifier.
+**Approach 1 — frozen features.** A pretrained backbone with frozen weights plus a simple linear classifier. Tells us how good pretrained features are on their own.
 
-**Approach 2 — fine-tuning.** We start from the pretrained weights and let some layers update during training. This is our proposed improvement. It tells us how much adapting to Mini-ImageNet adds on top of frozen features.
+**Approach 2 — fine-tuning.** Start from pretrained weights, let some layers update. Our proposed improvement. Tells us how much adapting to Mini-ImageNet adds on top.
 
-**Approach 3 — from scratch.** Random starting weights, no ImageNet head start. It tells us how much signal is in Mini-ImageNet alone.
+**Approach 3 — from scratch.** Random starting weights, no ImageNet head start. Tells us how much signal is in Mini-ImageNet alone.
 
-**Why run all three?** A single accuracy number would mix pretraining, adaptation, and in-domain learning into one lump. Running three lets us separate them.
+**Why run all three?** A single accuracy number mixes pretraining, adaptation, and in-domain learning into one lump. Running three separates them.
 
-**Why pretrained models in the first place?** As a well-understood baseline to build on. Approach 1 uses pretrained backbones frozen — that's our starting point. Approach 2 fine-tunes the same backbones — that's our proposed improvement. Approach 3 trains the same architectures from scratch — our first-principles comparison. The pretrained backbone is the common anchor that each of our approaches measures against.
-
----
-
-## Slide 4a — A1: Architecture Beats Depth at 32×32 (~30s)
-
-At 32 pixels, architecture matters much more than depth. Look at ResNet-18, 34, and 50 on the accuracy-versus-parameters plot — they all sit around 33% regardless of whether the model has 11 or 24 million parameters. Adding depth doesn't help. But ConvNeXt-Tiny jumps up by ten-plus points.
-
-The reason is the first layer — the stem. ConvNeXt uses a 4-by-4 patch convolution that shrinks the image in one clean step and leaves enough spatial structure for the later layers to work with. ResNet's stem uses a bigger convolution plus a max-pool, which squeezes a 32-pixel input down too fast. Deeper ResNets inherit the same bad stem, so extra layers can't rescue them.
+**Why pretrained models in the first place?** As a well-understood baseline to build on. A1 uses them frozen — our starting point. A2 fine-tunes them — our proposed improvement. A3 trains the same architectures from scratch. The pretrained backbone is the common anchor our approaches measure against.
 
 ---
 
-## Slide 4b — A1: Resolution Dominates Any Architecture Gap (~25s)
+## Slide 4a — A1: Architecture Beats Depth at 32×32 (~31s, ~85 words)
+
+At 32 pixels, architecture matters far more than depth. ResNet-18, 34, and 50 all sit around 33% despite roughly 2× the parameters — depth doesn't help. But ConvNeXt-Tiny jumps up by ten-plus points.
+
+The reason is the stem — the first layer. ConvNeXt's 4-by-4 patchify shrinks the image in one clean step and leaves enough structure for the later layers to work with. ResNet's bigger conv plus max-pool squeezes a 32-pixel input down too fast, and the deeper ResNets inherit the same bad stem.
+
+---
+
+## Slide 4b — A1: Resolution Dominates Any Architecture Gap (~24s, ~65 words)
 
 Resolution is the biggest single factor — bigger than any architecture gap. Both backbones lose about 50 points going from 224 to 32.
 
@@ -79,13 +77,13 @@ The t-SNE plot shows why. At 224, each class forms a tight, separable cluster. A
 
 ---
 
-## Slide 4c — A1: Classifier Barely Matters (~15s) + Handoff (~5s)
+## Slide 4c — A1: Classifier Barely Matters (~17s) + Handoff (~7s)
 
-The linear classifier barely matters. SVM and logistic regression land within half a point on our efficiency score for every backbone — you can see the paired bars sit at almost the same height. That's actually a good sign — it confirms we're measuring feature quality, not the classifier, which validates Approach 1's design.
+The classifier barely matters. SVM and logistic regression land within half a NetScore point for every backbone. That's a validation: we set out to measure feature quality, and swapping the classifier doesn't change the ranking.
 
-For Approaches 2 and 3, we carry forward two backbones: **ConvNeXt-Tiny**, the modern one, and **ResNet-18**, the fast classical one.
+We carry forward **ConvNeXt-Tiny** and **ResNet-18** into Approaches 2 and 3.
 
-**Handoff.** Over to Hoa — can fine-tuning close the gap between ConvNeXt and ResNet, and recover some of that 50-point resolution drop?
+Over to Hoa — can fine-tuning close the ConvNeXt-vs-ResNet gap?
 
 ---
 
