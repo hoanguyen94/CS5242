@@ -69,62 +69,14 @@ style: |
   }
 ---
 
-<!--
-==========================================================================
-PRESENTER BREAKDOWN
-==========================================================================
-Group 23 — David, Hoa, Khoa
-Presenter 1 (David, 4 min) — Intro + Part 1 (Problem/Data/Pre-processing)
-    + Part 2 (Three Approaches) + Part 3 (Approach 1 — Classical ML)
-    6 slides total, each showcasing a single plot at readable size:
-      1. Title + Research Question (45s)
-      2. Dataset & Pre-processing (60s)
-      3. Three-Approach Attribution Design (60s)
-      4a. A1 — Architecture beats depth (30s) — efficiency_tradeoff plot
-      4b. A1 — Resolution dominates (25s) — t-SNE plot
-      4c. A1 — Classifier barely matters + handoff (20s) — SVM vs LogReg test-accuracy bars
-    Each slide is designed to demonstrate understanding of *why* we made
-    our choices and *why* results turned out the way they did — not to
-    recite numbers. Full speaker script in part1_script.md.
-Presenter 2 (Hoa) — Part 4 (Approach 2 — Fine-Tuning)
-Presenter 3 (Khoa) — Part 5 (Approach 3 — Scratch) + Part 6 (Analysis) + Part 7 (Conclusions) + References
-==========================================================================
--->
-
 <!-- _class: lead -->
 
-# CS5242 Project — Image Classification on Mini-ImageNet
+# CS5242 Project
+## Image Classification on Mini-ImageNet
 
-## How much of our accuracy comes from pretraining, fine-tuning, or training from scratch?
-
-**Group 23** — Ngo Thanh Trung · Nguyen Thi Hoa · Nguyen Vu Anh Khoa
-
-*A three-lens attribution study — 100 classes, small data, low resolution.*
-
-<!--
-[Presenter 1 (David) — 0:00–0:45, ~45s]
-Frame the project as an ATTRIBUTION question, not an accuracy race — that
-matches the professor's philosophy (Project.pdf p.21: "It is about to
-understand why it works and why it does not"). Say:
-
-  - "We're Group 23 — David, Hoa, and Khoa."
-  - "The task is 100-class classification on Mini-ImageNet, but the
-     scientific question isn't 'can we classify it?' — it's *how much of
-     our accuracy comes from pretraining, versus task adaptation, versus
-     end-to-end learning from scratch*."
-  - "We answer that with three approaches — frozen pretrained features,
-     fine-tuning, and from scratch — designed so each isolates one
-     contribution."
-  - "I'll cover the problem setup, our three-approach design, and
-     Approach 1. Hoa takes Approach 2, Khoa closes with Approach 3 and
-     the cross-approach analysis."
-
-Don't rush — this slide sets the frame for everything else.
--->
+**Frozen Features, Fine-Tuning, and From Scratch — a Three-Lens Comparison**
 
 ---
-
-<!-- _class: "" -->
 
 # Agenda
 
@@ -135,11 +87,98 @@ Don't rush — this slide sets the frame for everything else.
 5. **Approach 3** — Training from scratch
 6. **Conclusions** — cross-approach synthesis
 
-<!--
-[Presenter 1 (David) — brief, no dedicated time — fold into slide 1 handoff]
-Agenda placeholder so the audience sees the arc. Only point at it if Q&A
-requires re-orienting.
--->
+---
+
+<!-- _class: lead -->
+
+# Part 1
+## Problem, Data & Pre-processing
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+</style>
+
+# Problem Statement & Motivation
+
+**Task.** 100-class image classification on **Mini-ImageNet** — small enough to iterate on a single GPU yet rich enough to distinguish modern architectures.
+
+**Why this problem?** Canonical CV task where trade-offs between **architecture**, **data regime**, and **pretraining** can be measured cleanly. Mini-ImageNet stresses **small data** (500/class), **low resolution** (32×32), and the **pretrained-vs-scratch** divide.
+
+**Why deep learning?** 100-way image classification needs hierarchical visual features — CNN/ConvNeXt inductive biases match the input structure; no competitive classical alternative at this scale.
+
+**Why pretrained models — justified.** We use them in **A1 & A2** to quantify how much Mini-ImageNet performance is carried by ImageNet pretraining, and include **A3 (from scratch)** to isolate that contribution. The scientific question is *the value of pretraining*.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+</style>
+
+# Dataset
+
+- **Source:** Mini-ImageNet [4] — 100 classes drawn from ImageNet-1K
+- **Splits:** 50,000 train / 10,000 val / 5,000 test (fixed, reproducible)
+- **Balance:** 500 train images per class (perfectly balanced — no re-weighting needed)
+- **Resolutions tested:** native (≈500×N) resized to **224×224** and **32×32**
+
+<div class="columns">
+<div>
+
+### Why 32×32 *and* 224×224?
+- **224×224** matches pretraining → upper-bound on pretrained feature quality
+- **32×32** stresses architectures *off* design regime — robustness test + practical memory-bandwidth setting
+
+</div>
+<div>
+
+### Known Caveat
+Mini-ImageNet's 100 classes are a *subset* of ImageNet-1K. Pretrained backbones have seen these classes, so 224×224 pretrained numbers are an **upper bound**, not transfer to an unseen distribution. Approach 3 (from scratch) addresses this directly.
+
+</div>
+</div>
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+</style>
+
+# Exploratory Data Analysis
+
+<div class="columns">
+<div>
+
+![w:500](../eda/class_distribution_all_splits.png)
+
+### Class distribution
+- Exactly balanced across train/val/test — no class imbalance to correct
+- Eliminates class-weighting as a confound in later results
+
+### Dataset statistics
+- **Train mean (RGB):** `(0.479, 0.452, 0.408)`
+- **Train std (RGB):** `(0.288, 0.280, 0.294)`
+- Native resolutions cluster near 500×375
+
+</div>
+<div>
+
+### Visual sample (random grid)
+![w:280](../eda/visual_grid.png)
+
+</div>
+</div>
+
+> EDA outputs in [experiments/eda/](../eda/) — full figures from `data_analysis.ipynb`.
 
 ---
 
@@ -151,207 +190,359 @@ h3 { font-size: 22px; }
 blockquote { font-size: 18px; }
 </style>
 
-# Dataset & Pre-processing — Decisions With a Reason
+# Pre-processing Pipeline
 
 <div class="columns">
 <div>
 
-**Mini-ImageNet** [4] — 100 classes ⊂ ImageNet-1K, 50k/10k/5k train/val/test. **Perfectly balanced** (plot →) → no class-weighting confound in later comparisons.
-
-### Decisions we made — and why:
-
-**Two resolutions.** 224×224 matches the **pretraining regime** (upper bound on pretrained feature quality). 32×32 is a deliberate **off-regime stress test** — it forces architectures outside their design window and exposes which ones have the right inductive biases for low-resolution input.
-
-**Our own normalisation stats** (mean ≈ 0.48, 0.45, 0.41 — *not* ImageNet defaults). Resizing to 32 px **shifts** the per-channel pixel distribution; using our train-split stats keeps A3's inputs properly zero-mean.
-
-**Augmentation splits by approach.** A1 caches features once — no train-time aug. A2 & A3 train end-to-end with random crop + horizontal flip.
+### Shared across all approaches
+- **Resize** to target (224 or 32) with aspect-preserving centre crop
+- **Normalise** with this dataset's own mean/std (from the train split), not ImageNet defaults
+- **Channel order** RGB, tensor in `[0,1]` before normalisation
+- Split integrity: transforms fit on **train only**; val/test use those stats
 
 </div>
 <div>
 
-![w:420](part1/plots/class_distribution_all_splits.png)
-
-![w:260](part1/plots/visual_grid.png)
+### Approach-specific
+- **A2 & A3 (training):** random crop + horizontal flip augmentation
+- **A1 (frozen features):** no train-time augmentation — features extracted once and cached
+- **A3 (from scratch):** heavier augmentation may be used — *[team member to specify]*
 
 </div>
 </div>
 
-<!--
-[Presenter 1 (David) — 0:45–1:45, ~60s]
-Each pre-processing choice is a chance to demonstrate understanding —
-narrate the *reason*, not the value:
-
-  - Balance plot: "Flat across all three splits — later accuracy gaps
-    can't be imbalance artefacts."
-  - Two resolutions: "224 matches what the backbones were pretrained on
-    — it's the ceiling. 32 is *deliberately* off-regime, because that's
-    where architectural choices — the stem design, the inductive biases —
-    actually matter. At 224 most modern backbones look similar."
-  - Own normalisation: "The 32-px resize changes the per-channel
-    statistics meaningfully. Using ImageNet's defaults would leave A3's
-    inputs off-centre. Trade-off acknowledged: A2 might marginally prefer
-    ImageNet defaults because pretrained BatchNorm is calibrated to them
-    — but the impact is <1 pp and A3 benefits more."
-  - Augmentation: "A1 has no train-time aug because we extract features
-    once and cache — any augmentation would force re-extraction. A2 and
-    A3 train end-to-end so augmentation is free and useful."
-
-The message: every pre-processing choice was deliberate, tied to the
-downstream experiments.
--->
+> Computing mean/std *on this dataset* is deliberate: the 32×32 resized distribution's statistics drift from full-resolution ImageNet statistics.
 
 ---
 
-# Three-Approach Attribution Design
+<!-- _class: lead -->
+
+# Part 2
+## Three Approaches — Baseline & Improvement
+
+---
+
+# The Three-Lens Design
 
 <div class="columns-3">
 <div>
 
-### A1 — Frozen features
-**Isolates feature quality** from pretraining alone.
-Pretrained backbone (frozen) + linear SVM / LogReg. Cheap, interpretable baseline.
+### Approach 1 — Classical ML
+**Role:** strong baseline using **pretrained** features
+- Frozen backbone + linear SVM / LogReg
+- Isolates feature quality from classifier choice
+- Very cheap, interpretable
 
 </div>
 <div>
 
-### A2 — Fine-tuning
-**Measures task-specific adaptation.**
-Pretrained init + selective unfreezing.
-**Our proposed improvement.**
+### Approach 2 — Fine-Tuning
+**Role:** **proposed improvement**
+- Pretrained init + selective unfreezing
+- Combines transfer with task-specific adaptation
+- Expected Pareto-best at moderate cost
 
 </div>
 <div>
 
-### A3 — Scratch
-**Measures in-domain signal alone.**
-Random init, full training — no ImageNet prior.
+### Approach 3 — Scratch
+**Role:** baseline from **first principles**
+- Random init, full training
+- Same architecture family, no ImageNet prior
+- Measures *pure* in-domain signal
 
 </div>
 </div>
 
-> **Why three, not one?** Reporting a single accuracy number conflates feature quality, task adaptation, and end-to-end signal. Running all three lets us **attribute** performance to each source independently — that's the scientific contribution of the design.
+> **Scientific question:** how much of Mini-ImageNet performance is *feature quality from pretraining* (A1) vs *task-specific adaptation* (A2) vs *learned end-to-end without prior* (A3)?
+> Reporting all three lets us attribute performance to each source instead of conflating them.
 
-> **Why use pretrained models?** As a **well-understood baseline to build on**. A1 uses frozen pretrained backbones — our starting point. A2 fine-tunes the same backbones — our proposed improvement. A3 trains the same architectures from scratch — the first-principles comparison. The pretrained backbone is the common anchor each approach measures against.
+---
 
-<!--
-[Presenter 1 (David) — 1:45–2:45, ~60s]
-This is the *framing* slide — the professor needs to see why we're
-running three approaches rather than one. Land these beats:
+<!-- _class: lead -->
 
-  - Each approach answers a different question. A1 = "how good are the
-    pretrained features by themselves?" A2 = "how much does adapting
-    them help?" A3 = "what can we learn without any ImageNet prior?"
-  - The three together form an attribution design: we can separate
-    pretraining's contribution from task adaptation's contribution
-    from end-to-end learning. A single number can't do that.
-  - Pretrained-model justification — this matters for grading (see
-    Project.pdf p.23: "use of pre-trained networks should be well
-    justified"). Our line: pretrained backbones are a well-understood
-    baseline. A1 uses them frozen; A2 fine-tunes the same backbones
-    (our proposed improvement); A3 trains the same architectures from
-    scratch. The pretrained backbone is the common anchor we build on
-    and compare against.
-
-Don't read the columns — point at them and narrate the roles. The
-blockquotes are for the audience to read while you talk.
--->
+# Part 3
+## Approach 1 — Classical ML
+### Pretrained Backbones as Frozen Feature Extractors
+### <span style="color:#555">(Strong baseline using pretrained features)</span>
 
 ---
 
 <!-- _class: "" -->
 <style scoped>
-section { font-size: 22px; }
-h1 { font-size: 28px; }
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+blockquote { font-size: 18px; }
 </style>
 
-# A1 — Architecture Beats Depth at 32×32
+# Approach 1: Motivation
 
-![w:860](part1/plots/analysis_efficiency_tradeoff.png)
-
-- **RN-18 / 34 / 50 within 1 pp** despite 2× the parameters — extra depth gives no headroom at 32×32.
-- **ConvNeXt-Tiny wins by 10+ pp** — its **4×4 patchify stem** keeps an 8×8 feature map for the 7×7 depthwise kernels; ResNet's stride-2 conv + max-pool cascade collapses 32-px input. Deeper ResNets inherit the same bad stem.
-
-<!--
-[Presenter 1 (David) — 2:45–3:15, ~30s]
-Point at the LEFT panel (Accuracy vs Parameters):
-  - "ResNet-18, 34, 50 all sit around 33% regardless of parameter count
-    — depth doesn't buy us accuracy at 32 pixels."
-  - "ConvNeXt-Tiny jumps 10+ pp."
-Then the mechanism: "It's the stem. ConvNeXt's 4×4 patchify shrinks
-spatial dims in one step and leaves enough structure for the 7×7
-depthwise kernels. ResNet's stem squeezes 32-px input down too fast —
-and deeper ResNets inherit the same bad stem."
--->
-
----
-
-<!-- _class: "" -->
-<style scoped>
-section { font-size: 22px; }
-h1 { font-size: 28px; }
-</style>
-
-# A1 — Resolution Dominates Any Architecture Gap
+**Idea:** Use pretrained ImageNet backbones as **frozen feature extractors**, then train lightweight classical classifiers on the extracted features.
 
 <div class="columns">
 <div>
 
-![w:480](part1/plots/downselected_backbones_tsne.png)
+### Advantages
+- **Data efficient** — only classifier head is learnable
+- **Fast** — single forward pass + seconds-to-minutes training
+- **Interpretable** — isolates backbone effect
 
 </div>
 <div>
 
-- **Both backbones drop ~50 pp** from 224 → 32 — **larger than any architecture gap.**
-- t-SNE shows the mechanism: at **224**, classes form **tight separable clusters**; at **32**, clusters **collapse together**.
-- Same backbone, same features — at 32 px there's just no spatial extent left to separate classes.
+### Limitations
+- No task-specific feature adaptation
+- Resolution sensitivity (pretrained for 224×224)
+- Linear classifier ceiling
 
 </div>
 </div>
 
-<!--
-[Presenter 1 (David) — 3:15–3:40, ~25s]
-"Resolution is the biggest single factor — bigger than any architecture
-gap. Both backbones lose about 50 points from 224 to 32."
-Point at the t-SNE: "At 224, every class forms a tight separable cluster.
-At 32, they collapse together. Same backbone, same features — but at
-32 pixels there's just no spatial extent left to tell classes apart."
--->
+---
+
+# Approach 1: Pipeline
+
+```
+Image → [Pretrained Backbone (frozen)] → Global Avg Pool → Feature Vector → [SVM / LogReg] → Class
+```
+
+**Pipeline:**
+1. Load pretrained ImageNet backbone — freeze all weights
+2. Extract feature vectors via forward pass (one-time cost)
+3. Train classical classifier on extracted features
+
+**Classifiers (sklearn, default hyperparameters):**
+- **Linear SVM** — `LinearSVC`, **squared-hinge** loss + L2, OvR, liblinear coordinate-descent solver
+- **Logistic Regression** — multinomial cross-entropy + L2, LBFGS, `max_iter=2000`
+
+> Results are single-seed with default hyperparameters.
 
 ---
 
 <!-- _class: "" -->
 <style scoped>
-section { font-size: 22px; }
+section { font-size: 18px; }
 h1 { font-size: 28px; }
+h3 { font-size: 20px; }
+table { font-size: 15px; }
+blockquote { font-size: 15px; }
 </style>
 
-# A1 — Classifier Barely Matters (→ We *Are* Measuring Features)
+# Approach 1: Experimental Design
 
-![w:860](part1/plots/analysis_classifier_accuracy.png)
+### Backbones (3 architecture families)
 
-- **SVM and LogReg are comparable for each backbone** — bars overlap across the board.
-- Signal is in the **backbone features**, not the classifier — **validating A1's design**, which was built to isolate feature quality.
+| Backbone | Family | Params (backbone, M) | Feature Dim | torchvision weights (IN-1K top-1) |
+|---|---|---|---|---|
+| ConvNeXt-Tiny | ConvNeXt [2] | 27.9 | 768 | `IMAGENET1K_V1` (82.52%) |
+| ResNet-18 | ResNet [1] | 11.2 | 512 | `IMAGENET1K_V1` (69.76%) |
+| ResNet-34 | ResNet [1] | 21.3 | 512 | `IMAGENET1K_V1` (73.31%) |
+| ResNet-50 | ResNet [1] | 23.7 | 2048 | `IMAGENET1K_V2` (80.86%) |
+| EfficientNet-b0 | EfficientNet [3] | 4.1 | 1280 | `IMAGENET1K_V1` (77.69%) |
 
-**Carry forward** to A2 & A3: **ConvNeXt-Tiny** + **ResNet-18**.
+### Experiment Grid
+- **32×32**: All backbones × {SVM, LogReg}
+- **224×224**: ConvNeXt-Tiny & ResNet-18 × SVM (downselected)
 
-<!--
-[Presenter 1 (David) — 3:40–3:57, ~17s]
-"The classifier barely matters. SVM and logistic regression are comparable
-for every backbone. That's a VALIDATION — we set out to measure feature
-quality, and swapping the classifier doesn't change the ranking."
-"We carry forward ConvNeXt-Tiny and ResNet-18 into A2 and A3."
-
-[Presenter 1 (David) — 3:57–4:00, ~3s HANDOFF]
-"Over to Hoa — can fine-tuning close the ConvNeXt-vs-ResNet gap?"
--->
+<div class="footnote">[1] He et al., CVPR 2016 &nbsp; [2] Liu et al., CVPR 2022 &nbsp; [3] Tan & Le, ICML 2019 &nbsp; [4] Vinyals et al., NeurIPS 2016</div>
 
 ---
 
-<!--
-==========================================================================
-END OF PRESENTER 1 (4 min) — handoff to HOA (Presenter 2) below
-==========================================================================
--->
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 28px; }
+blockquote { font-size: 18px; }
+</style>
+
+# Approach 1 — Results: NetScore, Accuracy, Inference & Parameters
+
+![w:920](analysis_netscore_combined.png)
+
+> **Key observation:** ConvNeXt-Tiny leads on **accuracy** (44.16%) despite the most parameters, while ResNet-18 leads on **NetScore** (45.4, per Wong [6]) due to its small size and fast inference. EfficientNet-b0 is slowest and least accurate.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 18px; }
+table { font-size: 15px; }
+h1 { font-size: 30px; }
+h3 { font-size: 20px; }
+</style>
+
+# Approach 1 — Efficiency Comparison (32×32)
+
+<div class="columns">
+<div>
+
+$$\text{NetScore} = 20\,\log_{10}\!\left(\frac{A^2}{\sqrt{T}\,\sqrt{P}}\right)$$
+
+| Backbone | Clf | Acc | Infer | NS |
+|---|---|---|---|---|
+| ResNet-18 | SVM | 32.52 | **2.89** | **45.4** |
+| ResNet-18 | LR | 32.46 | 3.09 | 45.1 |
+| ConvNeXt | LR | **44.16** | 5.92 | 43.6 |
+| ConvNeXt | SVM | 43.28 | 5.96 | 43.2 |
+| ResNet-34 | LR | 33.16 | 5.17 | 40.4 |
+| ResNet-34 | SVM | 33.08 | 5.49 | 40.1 |
+| EffNet-b0 | LR | 24.72 | 9.66 | 39.7 |
+| EffNet-b0 | SVM | 23.88 | 9.51 | 39.2 |
+| ResNet-50 | LR | 33.22 | 6.47 | 39.0 |
+| ResNet-50 | SVM | 27.34 | 6.51 | 35.6 |
+
+</div>
+<div>
+
+### Key Observations
+
+- **ResNet-18 SVM tops NetScore** (45.4) — smallest model (11.2M) + fastest inference (2.89 ms) offsets lower accuracy
+
+- **ConvNeXt-Tiny LogReg** leads on raw accuracy (44.16%) but 27.9M params penalise its NetScore
+
+- **Classifier choice barely affects NetScore** — SVM vs LogReg differ by <0.5 for same backbone, since inference time is backbone-dominated
+
+- **EfficientNet-b0** has poor NetScore despite fewest params (4.1M) — slowest inference (9.5 ms) + lowest accuracy (24%)
+
+</div>
+</div>
+
+---
+
+# Why ConvNeXt-Tiny Dominates at 32×32
+
+The key lies in how each architecture's **stem** processes low-resolution input:
+
+<div class="columns">
+<div>
+
+### ConvNeXt-Tiny Stem
+- **4×4 stride-4 patchify** convolution
+- 32×32 input → **8×8 feature map** after stem
+- Subsequent **7×7 depthwise kernels** still have meaningful spatial extent to work with
+- LayerNorm stabilises activations; GELU preserves gradient flow
+
+</div>
+<div>
+
+### ResNet Stem
+- **7×7 stride-2** conv + **3×3 stride-2** max-pool
+- 32×32 input → **8×8** after stem, then quickly **1×1** through residual stages
+- Deeper layers receive **spatially degenerate** feature maps — no local structure to exploit
+- BatchNorm statistics are calibrated for 224×224 distributions
+
+</div>
+</div>
+
+> ConvNeXt's patchify stem is resolution-adaptive: it reduces spatial dims in one step without the cascading downsampling that collapses small inputs in ResNets.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 28px; }
+</style>
+
+# Why Architecture Matters More Than Depth
+
+![w:850](analysis_efficiency_tradeoff.png)
+
+- **ResNet-18/34/50 cluster within ~1% on LogReg** (32.46 / 33.16 / 33.22) → extra depth gives no headroom at 32×32
+- **ConvNeXt-Tiny** leads by 10+% — patchify stem + 7×7 DW-Conv preserve spatial structure
+- **EfficientNet-b0 underperforms** — designed for 224×224; at 32×32 its feature maps are too small for Squeeze-and-Excitation (SE) attention and depthwise convolutions to be effective
+- *Caveat:* RN-50 uses torchvision `V2` weights; the "depth doesn't help" claim holds for LogReg but SVM+RN-50 is an outlier
+
+---
+
+# Generalisation Gap
+
+![w:900](analysis_generalisation_gap.png)
+
+> Val−Test gap is uniformly small (0.6–3.0%) — linear models on frozen features generalise well.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 16px; }
+h1 { font-size: 24px; }
+blockquote { font-size: 13px; }
+</style>
+
+# Resolution Impact & t-SNE Feature Visualisation
+
+<div class="columns">
+<div>
+
+![w:440](analysis_accuracy_drop.png)
+
+- Both backbones lose ≈**50%** (224→32) — severe resolution floor
+- ConvNeXt-Tiny's ~10% advantage preserved at both resolutions
+
+</div>
+<div>
+
+![w:440](downselected_backbones_tsne.png)
+
+- **224×224:** Tight, well-separated clusters — high linear-probe accuracy
+- **32×32:** Clusters collapse — consistent with ~50% drop
+- ConvNeXt-Tiny retains more inter-class separation at both resolutions
+
+</div>
+</div>
+
+---
+
+# Backbone Downselection for Later Approaches
+
+Based on these results, we select **two backbones** for Approaches 2 and 3:
+
+<div class="columns">
+<div>
+
+### 1. ConvNeXt-Tiny (SOTA)
+- **Highest accuracy** at all resolutions
+- 93.88% (224×224), 44.16% (32×32)
+- Modern architecture innovations
+- Best candidate for further improvement
+
+</div>
+<div>
+
+### 2. ResNet-18 (Classical Baseline)
+- **Fastest inference** (2.9 ms/image)
+- Well-established architecture
+- Measures how much fine-tuning closes the gap
+- Simple & interpretable
+
+</div>
+</div>
+
+> This pairing lets us compare fine-tuning and from-scratch strategies on a **modern vs classical** architecture.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 19px; }
+h1 { font-size: 28px; }
+ol { margin-top: 0.4em; }
+ol li { margin-bottom: 0.4em; }
+</style>
+
+# Approach 1 — Key Takeaways
+
+1. **ConvNeXt-Tiny is the strongest backbone** — leads by 10+% at both resolutions on Mini-ImageNet
+2. **Architecture matters more than depth** — RN-18/34/50 cluster within ~1%; ConvNeXt's stem design is the larger effect
+3. **Resolution is the dominant factor** — 224→32 costs ≈50% for both probed backbones; larger than any architecture gap
+4. **EfficientNet-b0 underperforms at 32×32** — designed for 224×224; feature maps too small for SE attention and depthwise convolutions
+5. **Small val–test gap (0.6–3.0%)** — linear probes on frozen features generalise well
+6. **Limitations.** Single seed, default hyperparameters, Mini-ImageNet ⊂ ImageNet-1K, mixed `V1`/`V2` torchvision weights
+
+---
 
 <!-- _class: lead -->
 
@@ -665,10 +856,169 @@ blockquote { font-size: 18px; }
 
 ---
 
+
 <!-- _class: lead -->
 
 # Part 5
 ## Approach 3 — Training from Scratch
+### Evaluating Pure Architectural Efficiency
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+blockquote { font-size: 18px; }
+</style>
+
+# Motivation & Evaluation Setting
+
+**Why train from scratch?**
+
+- Transfer learning can mask intrinsic architectural properties
+- Realistic scenario for:
+  - Domain-specific datasets
+  - Limited compute / no large-scale pretraining
+  - Resource-constrained deployment
+
+**Goal:**  
+Isolate the **pure efficiency–effectiveness trade-off** of architectures *without ImageNet priors*.
+
+> Training from scratch is a **stress test** for architectural inductive bias, optimization stability, and parameter efficiency.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+</style>
+
+# Architectures Compared
+
+| Model | Params (M) | Design Intent |
+|---|---:|---|
+| **ResNet-18** | 11.2 | Strong inductive bias, stable optimization |
+| **ConvNeXt-Tiny** | 27.9 | High capacity, pretraining-oriented |
+| **ConvNeXt-Lite (ours)** | **3.6** | Lightweight, efficiency-first |
+| **ConvNeXt-Lite-Inception (ours)** | **5.0** | Multi-scale enhancement |
+
+**Key design choices (ours):**
+- Reduced depth & channel width
+- Depthwise convolutions + LayerNorm + GELU
+- Optional **Inception-style multi-scale depthwise kernels (3×3, 5×5, 7×7)**
+
+> Hypothesis: **Careful inductive bias beats raw capacity** in from-scratch regimes.
+
+
+---
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+figure { text-align: center; }
+figcaption {
+  font-size: 16px;
+  color: #555;
+  margin-top: 0.5em;
+}
+</style>
+
+# Proposed Architectures
+
+<figure>
+ <figcaption>
+    Side-by-side comparison of <b>ConvNeXt-Lite</b> (left) and
+    <b>ConvNeXt-Lite-Inception</b> (right).  
+    The Inception variant introduces multi-scale depthwise convolutions
+    (3×3, 5×5, 7×7) while preserving the lightweight ConvNeXt design.
+  </figcaption>
+  <img src="figures/convnext-lite.png" width="50%">
+</figure>
+
+
+> Idea: ConvNeXt‑Lite prioritizes efficiency through aggressive simplification, while the Inception variant re‑injects spatial diversity via multi‑scale depthwise kernels at minimal cost
+
+---
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+figure { text-align: center; }
+figcaption {
+  font-size: 16px;
+  color: #555;
+  margin-top: 0.6em;
+  line-height: 1.4;
+}
+</style>
+
+# Approach 3 — Experimental Overview
+
+<figure>
+  <figcaption>
+    Test accuracy across all <b>from‑scratch experiments</b> under different optimization settings.
+    ConvNeXt‑Lite and ConvNeXt‑Lite‑Inception consistently outperform ResNet‑18 and ConvNeXt‑Tiny
+    across schedulers and learning rates, demonstrating superior optimization robustness and
+    efficiency‑aware generalization.
+  </figcaption>
+  <img src="figures/app3_compare.png" alt="Test accuracy across all Approach 3 experiments" width="50%">
+</figure>
+
+This figure shows all from‑scratch experiments.
+The key pattern is that ConvNeXt‑Lite variants are consistently strong across schedulers and learning rates, while ConvNeXt‑Tiny struggles to optimize without pretraining.
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 18px; }
+h1 { font-size: 28px; }
+table { font-size: 15px; }
+blockquote { font-size: 16px; }
+</style>
+
+# Results: Accuracy vs Efficiency (32×32)
+
+| Model | Params (M) | Test Acc (%) | Infer (ms) | NetScore |
+|---|---:|---:|---:|---:|
+| ResNet-18 | 11.23 | 24.74 | **2.99** | 40.48 |
+| ConvNeXt-Tiny | 27.90 | 21.30 | 6.01 | 30.89 |
+| **ConvNeXt-Lite** | **3.56** | **32.32** | **2.98** | **50.12** |
+| ConvNeXt-Lite-Inception | 4.98 | **33.20** | 3.15 | 48.89 |
+
+**Observations**
+- ConvNeXt-Tiny **fails to scale down** when trained from scratch
+- ConvNeXt-Lite achieves **+7–10% accuracy** over ResNet-18 with **~⅓ parameters**
+- Inception variant improves peak accuracy with minimal overhead
+
+---
+
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 28px; }
+h3 { font-size: 22px; }
+blockquote { font-size: 18px; }
+</style>
+
+# Key Insights & Implications
+
+### What we learn
+1. **Larger ≠ better** without pretraining  
+   ConvNeXt-Tiny underperforms despite highest capacity
+2. **Inductive bias > parameter count**  
+   Lightweight ConvNeXt-style design generalizes better
+3. **Multi-scale features help**  
+   Inception-style depthwise kernels recover lost capacity
+4. **Optimization robustness matters**  
+   Proposed models are stable across schedulers and learning rates
+
+> **Conclusion:**  
+A carefully designed lightweight architecture can achieve a **superior efficiency–effectiveness trade-off** compared to both classical ResNets and large modern ConvNets when trained entirely from scratch.
 
 ---
 
@@ -676,9 +1026,73 @@ blockquote { font-size: 18px; }
 
 # Part 6
 ## Conclusions
+### Accuracy vs Efficiency Across Approaches
 
 ---
 
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 20px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+table { font-size: 16px; }
+blockquote { font-size: 18px; }
+</style>
+
+# Cross‑Approach Comparison
+
+| Method | Backbone | Test Acc (%) | Infer (ms/img) | Params (M) | NetScore |
+|---|---|---:|---:|---:|---:|
+| A1 — Frozen Features | ResNet‑18 | 32.52 | **2.89** | 11.23 | 45.37 |
+| A1 — Frozen Features | ConvNeXt‑Tiny | 43.28 | 5.96 | 27.90 | 43.24 |
+| A2 — Full Fine‑Tuning | ResNet‑18 | 39.34 | 2.99 | 11.23 | 48.53 |
+| A2 — Full Fine‑Tuning | ConvNeXt‑Tiny | **62.70** | 6.01 | 27.90 | 49.65 |
+| **A3 — From Scratch** | **ConvNeXt‑Lite** | 32.32 | 2.98 | **3.56** | **50.12** |
+| A3 — From Scratch | ConvNeXt‑Lite‑Inception | 33.20 | 3.15 | 4.98 | 48.89 |
+
+### Accuracy‑centric view
+- **Approach 2 (Transfer Learning)** dominates accuracy  
+  → ConvNeXt‑Tiny full fine‑tuning reaches **62.70%**
+- **Approach 1 ≈ Approach 3** in accuracy  
+  → Lightweight from‑scratch models match frozen ResNet‑18 **without pretraining**
+- Indicates **inductive bias can partially substitute for pretrained features**
+
+> Accuracy ranking:  
+> **Approach 2 > Approach 1 ≈ Approach 3**
+
+---
+<!-- _class: "" -->
+<style scoped>
+section { font-size: 18px; }
+h1 { font-size: 30px; }
+h3 { font-size: 22px; }
+blockquote { font-size: 16px; }
+</style>
+
+# Efficiency, NetScore & Interpretation
+
+### NetScore reshapes the ranking
+- **Approach 3 achieves the highest NetScore**
+  - ConvNeXt‑Lite: **50.12** with only **3.56M params**
+  - Fast inference (**2.98 ms/img**) offsets lower absolute accuracy
+- **Approach 2** improves accuracy but pays for it with:
+  - Larger backbones (27.9M params)
+  - Higher latency (~6 ms/img)
+  → NetScore gains are **moderate**, not dominant
+- **Approach 1** is efficient and stable but capped by frozen representations
+
+### Key interpretation
+- **Higher accuracy ≠ better overall performance**
+- Optimal strategy depends on deployment constraints:
+  - Accuracy‑first → **Transfer learning**
+  - Simplicity & stability → **Frozen features**
+  - Balanced efficiency–effectiveness → **Lightweight from‑scratch design**
+
+> **Takeaway:**  
+> There is no universally optimal approach.  
+> **Architectural design aligned with constraints matters more than raw accuracy alone.**
+
+--
 # Conclusions
 
 ---
