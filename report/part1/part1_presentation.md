@@ -82,7 +82,7 @@ Presenter 1 (David, 4 min) — Intro + Part 1 (Problem/Data/Pre-processing)
       3. Three-Approach Attribution Design (60s)
       4a. A1 — Architecture beats depth (30s) — efficiency_tradeoff plot
       4b. A1 — Resolution dominates (25s) — t-SNE plot
-      4c. A1 — Classifier barely matters + handoff (20s) — NetScore plot
+      4c. A1 — Classifier barely matters + handoff (20s) — SVM vs LogReg test-accuracy bars
     Each slide is designed to demonstrate understanding of *why* we made
     our choices and *why* results turned out the way they did — not to
     recite numbers. Full speaker script in part1_script.md.
@@ -125,6 +125,25 @@ Don't rush — this slide sets the frame for everything else.
 ---
 
 <!-- _class: "" -->
+
+# Agenda
+
+1. **Problem, Data & Pre-processing** — Mini-ImageNet, EDA, normalisation choices
+2. **Three Approaches** — baseline + proposed improvement
+3. **Approach 1** — Classical ML on frozen pretrained features
+4. **Approach 2** — Fine-tuning with selective unfreezing
+5. **Approach 3** — Training from scratch
+6. **Conclusions** — cross-approach synthesis
+
+<!--
+[Presenter 1 (David) — brief, no dedicated time — fold into slide 1 handoff]
+Agenda placeholder so the audience sees the arc. Only point at it if Q&A
+requires re-orienting.
+-->
+
+---
+
+<!-- _class: "" -->
 <style scoped>
 section { font-size: 20px; }
 h1 { font-size: 30px; }
@@ -150,9 +169,9 @@ blockquote { font-size: 18px; }
 </div>
 <div>
 
-![w:420](../../experiments/eda/class_distribution_all_splits.png)
+![w:420](plots/class_distribution_all_splits.png)
 
-![w:260](../../experiments/eda/visual_grid.png)
+![w:260](plots/visual_grid.png)
 
 </div>
 </div>
@@ -247,7 +266,7 @@ h1 { font-size: 28px; }
 
 # A1 — Architecture Beats Depth at 32×32
 
-![w:860](../../experiments/classical_ml/analysis_efficiency_tradeoff.png)
+![w:860](plots/analysis_efficiency_tradeoff.png)
 
 - **RN-18 / 34 / 50 within 1 pp** despite 2× the parameters — extra depth gives no headroom at 32×32.
 - **ConvNeXt-Tiny wins by 10+ pp** — its **4×4 patchify stem** keeps an 8×8 feature map for the 7×7 depthwise kernels; ResNet's stride-2 conv + max-pool cascade collapses 32-px input. Deeper ResNets inherit the same bad stem.
@@ -277,7 +296,7 @@ h1 { font-size: 28px; }
 <div class="columns">
 <div>
 
-![w:480](../../experiments/classical_ml/downselected_backbones_tsne.png)
+![w:480](plots/downselected_backbones_tsne.png)
 
 </div>
 <div>
@@ -308,19 +327,18 @@ h1 { font-size: 28px; }
 
 # A1 — Classifier Barely Matters (→ We *Are* Measuring Features)
 
-![w:860](../../experiments/classical_ml/analysis_netscore_combined.png)
+![w:860](plots/analysis_classifier_accuracy.png)
 
-- **SVM vs LogReg bars overlap for each backbone** — within 0.5 NetScore.
+- **SVM and LogReg are comparable for each backbone** — bars overlap across the board.
 - Signal is in the **backbone features**, not the classifier — **validating A1's design**, which was built to isolate feature quality.
 
 **Carry forward** to A2 & A3: **ConvNeXt-Tiny** + **ResNet-18**.
 
 <!--
 [Presenter 1 (David) — 3:40–3:57, ~17s]
-"The classifier barely matters. SVM and logistic regression land within
-half a NetScore point for every backbone. That's a VALIDATION — we set
-out to measure feature quality, and swapping the classifier doesn't
-change the ranking."
+"The classifier barely matters. SVM and logistic regression are comparable
+for every backbone. That's a VALIDATION — we set out to measure feature
+quality, and swapping the classifier doesn't change the ranking."
 "We carry forward ConvNeXt-Tiny and ResNet-18 into A2 and A3."
 
 [Presenter 1 (David) — 3:57–4:00, ~3s HANDOFF]

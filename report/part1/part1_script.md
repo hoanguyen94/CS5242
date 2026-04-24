@@ -79,7 +79,7 @@ The t-SNE plot shows why. At 224, each class forms a tight, separable cluster. A
 
 ## Slide 4c — A1: Classifier Barely Matters (~17s) + Handoff (~7s)
 
-The classifier barely matters. SVM and logistic regression land within half a NetScore point for every backbone. That's a validation: we set out to measure feature quality, and swapping the classifier doesn't change the ranking.
+The classifier barely matters. SVM and logistic regression come out comparable for every backbone. That's a validation: we set out to measure feature quality, and swapping the classifier doesn't change the ranking.
 
 We carry forward **ConvNeXt-Tiny** and **ResNet-18** into Approaches 2 and 3.
 
