@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 dir_ = Path(__file__).parent
-src = dir_ / "presentation.md"
+src = dir_ / "presentation_part3.md"
 ts = datetime.now().strftime('%y%m%d%H%M%S')
 
 marp = shutil.which("marp")
@@ -23,7 +23,7 @@ else:
     )
 
 for ext in ("html", "pdf"):
-    dst = dir_ / f"presentation_{ts}.{ext}"
+    dst = dir_ / f"presentation_part3.{ext}"
     result = subprocess.run(
         [*marp_cmd, "--html", str(src), "-o", str(dst), "--allow-local-files"],
         capture_output=True,

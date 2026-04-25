@@ -7,8 +7,14 @@ dependencies:
   - pytorch
   - torchvision
   - numpy
-  - scipy
+  - pandas
   - scikit-learn
   - matplotlib
   - pillow
   - tqdm
+  - joblib
+  - ipython
+  - datasets
+  - pip
+  - pip:
+      - thop
