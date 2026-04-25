@@ -428,39 +428,17 @@ blockquote { font-size: 16px; }
 
 <!-- _class: "" -->
 <style scoped>
-section { font-size: 20px; }
+section { font-size: 18px; }
 h1 { font-size: 28px; }
 h3 { font-size: 21px; }
 blockquote { font-size: 18px; }
 </style>
 
-# LoRA: Low-Rank Adaptation
+# Approach 2 — Accuracy Comparison
 
-LoRA is applied only to eligible backbone `Linear` layers in our implementation; convolutional layers are not LoRA-adapted.
+![w:1160](finetune_accuracy_plot_check.png)
 
-$$W' = W_{frozen} + B A \frac{\alpha}{r}$$
-
-<div class="columns">
-<div>
-
-### What is trained?
-- LoRA matrices `A` and `B` in targeted `Linear` layers
-- Final classifier head
-- Original backbone weights remain frozen
-- Rank `r = 8`, scaling `alpha = 16`
-
-</div>
-<div>
-
-### Why it matters here
-- ConvNeXt has many internal `Linear` layers, so LoRA can adapt useful representation paths
-- ResNet-18 is mostly convolutional, so Linear-layer LoRA has less room to help
-- Explains the architecture-specific LoRA result: **61.74%** for ConvNeXt vs **19.64%** for ResNet-18
-
-</div>
-</div>
-
-> LoRA is parameter-efficient, but its benefit depends on whether the backbone exposes useful `Linear` layers for low-rank updates.
+> Full fine-tuning is best for both backbones, while ConvNeXt-Tiny consistently outperforms ResNet-18 under every transfer policy.
 
 ---
 
@@ -469,162 +447,12 @@ $$W' = W_{frozen} + B A \frac{\alpha}{r}$$
 section { font-size: 18px; }
 h1 { font-size: 28px; }
 h3 { font-size: 20px; }
-li { font-size: 16px; }
-blockquote { font-size: 16px; }
-</style>
-
-# AdamW Optimizer
-
-All transfer-learning runs use AdamW [8], an Adam-style optimizer with decoupled weight decay:
-
-$$m_t = \beta_1 m_{t-1} + (1-\beta_1)g_t,\quad v_t = \beta_2 v_{t-1} + (1-\beta_2)g_t^2$$
-
-$$\theta_t = \theta_{t-1} - \eta\frac{\hat{m}_t}{\sqrt{\hat{v}_t}+\epsilon} - \eta\lambda\theta_{t-1}$$
-
-<div class="columns">
-<div>
-
-### Why AdamW?
-- Adaptive step size for each parameter
-- Weight decay is applied separately from gradient moments
-- Stable for fine-tuning pretrained ConvNeXt and ResNet at LR = `1e-4`
-
-</div>
-<div>
-
-### Parameters
-- `g_t`: gradient at step `t`
-- `m_t`: moving average of gradients; `beta_1` controls momentum
-- `v_t`: moving average of squared gradients; `beta_2` controls gradient scale memory
-- `eta`: learning rate, `lambda`: weight decay, `epsilon`: stability constant
-
-</div>
-</div>
-
-> Compared with SGD, AdamW is less sensitive to one global learning rate and handles layers with different gradient scales better.
-
----
-
-<!-- _class: "" -->
-<style scoped>
-section { font-size: 20px; }
-h1 { font-size: 28px; }
-h3 { font-size: 21px; }
-blockquote { font-size: 18px; }
-</style>
-
-# Cosine Annealing Scheduler
-
-All fine-tuning runs use AdamW with a cosine learning-rate schedule:
-
-$$\eta_t = \eta_{min} + \frac{1}{2}(\eta_{max} - \eta_{min})\left(1 + \cos\left(\frac{t}{T_{max}}\pi\right)\right)$$
-
-<div class="columns">
-<div>
-
-### Why use it?
-- Larger updates early help the model move toward Mini-ImageNet-specific features
-- Smaller updates later avoid disrupting useful pretrained representations
-- Smooth decay is better suited to fine-tuning than abrupt LR drops
-
-</div>
-<div>
-
-### In our setup
-- Initial LR: `1e-4`
-- Schedule length: full epoch budget
-- Checkpoint selection: best validation accuracy
-- Early stopping prevents wasting epochs after validation saturation
-
-</div>
-</div>
-
-> Cosine annealing gives adaptation room early, then stabilises the pretrained backbone as training converges.
-
----
-
-<!-- _class: "" -->
-<style scoped>
-section { font-size: 17px; }
-h1 { font-size: 28px; }
-h3 { font-size: 20px; }
-table { font-size: 13px; }
-blockquote { font-size: 16px; }
-</style>
-
-# Approach 2 — Accuracy Results
-
-| Backbone | Method | Best val | Test acc | Test loss | Epochs |
-|---|---|---:|---:|---:|---:|
-| ConvNeXt-Tiny | Classifier only | 52.40 | 50.92 | 1.9369 | 54 |
-| ConvNeXt-Tiny | Last stage + classifier | 57.26 | 55.44 | 1.7156 | 16 |
-| ConvNeXt-Tiny | **Full fine-tuning** | **65.11** | **62.70** | 1.6357 | 16 |
-| ConvNeXt-Tiny | LoRA | 64.26 | 61.74 | **1.4397** | 34 |
-| ResNet-18 | Classifier only | 21.49 | 19.98 | 3.5373 | 36 |
-| ResNet-18 | Last stage + classifier | 33.18 | 32.64 | 2.8840 | 18 |
-| ResNet-18 | **Full fine-tuning** | **40.41** | **39.34** | **2.5783** | 15 |
-| ResNet-18 | LoRA | 21.48 | 19.64 | 3.5176 | 40 |
-
-> Full fine-tuning is best for both backbones; ConvNeXt-Tiny LoRA is almost as accurate and has the lowest ConvNeXt test loss.
-
----
-
-<!-- _class: "" -->
-<style scoped>
-section { font-size: 19px; }
-h1 { font-size: 28px; }
-h3 { font-size: 21px; }
-blockquote { font-size: 18px; }
-</style>
-
-# Approach 2 — What the Results Say
-
-<div class="columns">
-<div>
-
-### ConvNeXt-Tiny
-- Classifier only already improves over the Approach 1 frozen LogReg baseline: **50.92% vs 44.16%**
-- Last-stage fine-tuning adds another **+4.52%**
-- Full fine-tuning reaches **62.70%**, the strongest result
-- LoRA reaches **61.74%**, only **0.96%** behind full tuning
-
-</div>
-<div>
-
-### ResNet-18
-- Classifier-only transfer is weak: **19.98%**, below the Approach 1 frozen-feature probes
-- Last-stage tuning recovers to **32.64%**
-- Full fine-tuning reaches **39.34%**, best ResNet result
-- LoRA stays near classifier-only because adapters only target `Linear` layers
-
-</div>
-</div>
-
-> ConvNeXt-Tiny benefits from both full fine-tuning and LoRA because its ConvNeXt blocks contain many internal Linear layers; ResNet-18 needs broader convolutional adaptation.
-
----
-
-<!-- _class: "" -->
-<style scoped>
-section { font-size: 17px; }
-h1 { font-size: 28px; }
-h3 { font-size: 20px; }
-table { font-size: 15px; }
 blockquote { font-size: 16px; }
 </style>
 
 # Approach 2 — Efficiency & NetScore
 
-| Backbone | Method | Test | Infer | Params | Train time | Peak mem | NetScore |
-|---|---|---:|---:|---:|---:|---:|---:|
-| ConvNeXt | **Full fine-tuning** | **62.70** | 6.01 | 27.90M | 1950s | 1458MB | **49.65** |
-| ConvNeXt | Last stage | 55.44 | 5.90 | 27.90M | **1872s** | 437MB | 47.59 |
-| ConvNeXt | LoRA | 61.74 | 10.58 | 28.43M | 3986s | 1126MB | 46.84 |
-| ConvNeXt | Classifier only | 50.92 | 6.04 | 27.90M | 6237s | **260MB** | 46.01 |
-| ResNet-18 | **Full fine-tuning** | **39.34** | 2.99 | 11.23M | **1773s** | 513MB | **48.53** |
-| ResNet-18 | Last stage | 32.64 | 2.89 | 11.23M | 2116s | 284MB | 45.44 |
-| ResNet-18 | Classifier only | 19.98 | **2.80** | 11.23M | 4154s | 187MB | 37.05 |
-| ResNet-18 | LoRA | 19.64 | 2.94 | 11.23M | 4569s | **187MB** | 36.54 |
+![w:1160](finetune_netscore_plot.png)
 
 > Full fine-tuning wins NetScore for both backbones because the accuracy gain outweighs the inference-time and parameter terms in the metric.
 
